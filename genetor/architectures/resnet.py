@@ -1,14 +1,11 @@
 from .. import components
 
 
-def generate_architecture(input, structure):
+def generate_architecture(structure):
     filters = structure['filters']
     is_training = components.to_tensor(structure['is_training'])
 
     architecture = [{
-        'type': 'input',
-        'input': input
-    }, {
         'type': 'conv',
         'params': {
             'filters': filters[0],

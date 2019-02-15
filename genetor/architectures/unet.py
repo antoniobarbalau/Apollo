@@ -1,11 +1,8 @@
-def generate_architecture(input, structure):
+def generate_architecture(structure):
     filters = structure['filters']
     scope = structure['scope']
 
-    architecture = [{
-        'type': 'input',
-        'input': input
-    }]
+    architecture = []
     for f in filters[:-1]:
         architecture += [{
             'type': 'conv',

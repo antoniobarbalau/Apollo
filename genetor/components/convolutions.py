@@ -1,5 +1,6 @@
 import tensorflow as tf
 from .basic import to_tensor
+from .initializations import default_initialization
 
 
 def conv(input, **params):
