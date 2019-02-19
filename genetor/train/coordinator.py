@@ -8,11 +8,13 @@ class Coordinator(object):
     def __init__(self,
                  ckpt_meta_path,
                  record_paths = None,
-                 placeholders = None,
                  summary = None,
+                 batch_size = None,
+                 n_samples = None,
+                 placeholders = dict(),
                  optimizers = ['optimizer'],
                  record_paths_placeholder = 'record_paths:0',
-                 batch_size = 'batch_size:0',
+                 batch_size_tensor = 'batch_size:0',
                  iterator_initializer = 'iterator_initializer',
                  next_batch = 'next_batch'):
 
@@ -20,17 +22,12 @@ class Coordinator(object):
         self.record_paths = record_paths
         self.record_paths_placeholder = record_paths_placeholder
         self.batch_size = batch_size
+        self.batch_size_tensor = batch_size_tensor
         self.placeholders = placeholders
         self.summary = summary
         self.optimizers = optimizers
         self.iterator_initializer = iterator_initializer
         self.next_batch = next_batch
-        non_valid_placeholders = {} if self.record_paths else {
-            'batch_size:0', 'n_samples:0'
-        }
-        self.valid_placeholders = (
-            set(self.placeholders.keys()) - non_valid_placeholders
-        )
 
         self.load_session()
         self.convert_placeholders_generators()
@@ -49,14 +46,13 @@ class Coordinator(object):
 
         if self.record_paths:
             self.initialize_iterators()
-        n_iterations = math.ceil(self.n_samples / self.placeholders[self.batch_size])
+        n_iterations = math.ceil(self.n_samples / self.batch_size)
         load_data = [self.operations[self.next_batch]] if self.record_paths else []
         summary = [self.summary_merged] if self.summary else []
         for iteration_n in range(n_iterations):
             feed_dict = {
-                name: generator(iteration_n, self.placeholders[self.batch_size])
+                name: generator(iteration_n, self.batch_size)
                 for name, generator in self.placeholders.items()
-                if name in self.valid_placeholders
             }
             results = self.session.run(
                 load_data +
@@ -98,7 +94,7 @@ class Coordinator(object):
 
     def convert_placeholders_generators(self):
         for elem in self.placeholders:
-            if type(self.placeholders[elem]) == type(lambda: 0):
+            if type(self.placeholders[elem]) != type(lambda: 0):
                 self.placeholders[elem] = lambda a, b: self.placeholders[elem]
 
 
@@ -108,7 +104,7 @@ class Coordinator(object):
 
     def create_summary(self):
         for tensor_name in self.summary.get('scalars', []):
-            tf.summary.scalar(tensor_name, self.tensors[tensor_name])
+            tf.summary.scalar('haha', self.tensors[tensor_name])
 
         for image in self.summary.get('images', []):
             tf.summary.image(
@@ -140,12 +136,11 @@ class Coordinator(object):
 
     def load_tensors(self):
         self.tensors = dict()
-        tensor_names = [
-            *self.valid_placeholders
-        ]
+        tensor_names = list(self.placeholders.keys())
         if self.record_paths:
             tensor_names += [
-                self.record_paths_placeholder
+                self.record_paths_placeholder,
+                self.batch_size_tensor
             ]
         if self.summary:
             tensor_names += self.summary.get('scalars', [])
@@ -167,7 +162,7 @@ class Coordinator(object):
             *self.optimizers
         ]
         if self.record_paths:
-            operation_name += [
+            operation_names += [
                 self.next_batch,
                 self.iterator_initializer
             ]
@@ -188,7 +183,7 @@ class Coordinator(object):
             self.operations[self.iterator_initializer],
             feed_dict = {
                 self.tensors[self.record_paths_placeholder]: self.record_paths,
-                self.tensors[self.batch_size]: self.placeholders[self.batch_size]
+                self.tensors[self.batch_size_tensor]: self.batch_size
             }
         )
         

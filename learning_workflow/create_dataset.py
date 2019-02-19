@@ -6,15 +6,17 @@ import tensorflow as tf
 import glob
 
 
-writer = genetor.data.Writer(
-    dir = f'../data/tf_records/mnist/',
-    format = {
-        'input': 'bytes'
-    },
-)
 for usage in ['train', 'val', 'test']:
-    for filepath in glob.glob(f'../data/raw/mnist_{usage}/*'):
+    writer = genetor.data.Writer(
+        dir = f'../data/tf_records/fer/{usage}/',
+        format = {
+            'input': 'bytes',
+            'target': 'int'
+        },
+    )
+    for filepath in glob.glob(f'../data/raw/fer/{usage}/**/*'):
         writer.write_sample({
             'input': writer.read_im(filepath),
+            'target': int(os.path.basename(os.path.dirname(filepath)))
         })
 
