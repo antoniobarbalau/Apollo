@@ -10,6 +10,7 @@ def conv(input, **params):
         strides = [1, params['stride'], params['stride'], 1]
         padding = params['padding']
         initialization = params['initialization']
+        biasless = params.get('biasless', False)
 
         kernel = tf.Variable(
             initial_value = initialization(
@@ -27,14 +28,35 @@ def conv(input, **params):
             strides = strides,
             padding = padding,
             name = 'filtered_input')
-        output_raw = tf.add(filtered_input, bias,
-                            name = 'output_raw')
+        if biasless:
+            output_raw = tf.add(filtered_input, bias,
+                                name = 'output_raw')
+        else:
+            output_raw = filtered_input
 
         activation = params.get('activation', None)
         if activation is None:
             activation = tf.identity
         output = activation(output_raw,
                             name = 'output')
+
+    return output
+
+
+def deconv_kernel(input, **params):
+    strides = [1, params['stride'], params['stride'], 1]
+    padding = params['padding']
+
+    kernel = params['kernel']
+    kernel = tf.transpose(kernel, (0, 1, 3, 2))
+    kernel = tf.reverse(kernel, axis = [0, 1])
+
+    output = tf.nn.conv2d(
+        input = input,
+        filter = kernel,
+        strides = strides,
+        padding = padding,
+        name = 'output')
 
     return output
 

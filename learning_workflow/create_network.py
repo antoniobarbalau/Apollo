@@ -22,7 +22,8 @@ architecture = [{
     structure = {
         'filters': [64, 128, 256],
         'kernels': [5] * 3,
-        'units': [512, 8]
+        'units': [512, 8],
+        'biasless': True
     }
 ), {
     'type': 'cross_entropy',
