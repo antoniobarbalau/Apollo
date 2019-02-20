@@ -28,7 +28,7 @@ def conv(input, **params):
             strides = strides,
             padding = padding,
             name = 'filtered_input')
-        if biasless:
+        if not biasless:
             output_raw = tf.add(filtered_input, bias,
                                 name = 'output_raw')
         else:

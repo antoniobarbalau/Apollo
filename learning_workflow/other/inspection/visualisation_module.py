@@ -2,13 +2,14 @@ import sys
 sys.path.append('../../../')
 
 import genetor
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import tensorflow as tf
 
 
-ckpt_meta_path = '../../../trained_models/checkpoints/fer/ckpt.meta'
+ckpt_meta_path = '../../../trained_models/checkpoints/mnist/ckpt.meta'
 session = tf.Session()
 saver = tf.train.import_meta_graph(ckpt_meta_path)
 saver.restore(session, tf.train.latest_checkpoint(
@@ -18,7 +19,7 @@ graph = tf.get_default_graph()
 
 input = graph.get_tensor_by_name('input:0')
 
-i = 2
+i = 1
 
 last_layer = graph.get_tensor_by_name(f'max_pool_{i}_1/output:0')
 
@@ -35,6 +36,7 @@ while i >= 0:
         shape = [np.prod(conv_output_shape)],
         dtype = tf.float32
     ), dtype = tf.float32)
+    session.run(unpooled.initializer)
     tf.scatter_update(
         unpooled,
         indices = switches,
@@ -57,9 +59,15 @@ while i >= 0:
 act = session.run(
     [deconv],
     feed_dict = {
-        input: 
+        input: [
+            np.expand_dims(cv2.imread(
+                '../../../data/raw/mnist/train/0_10.png',
+                cv2.IMREAD_GRAYSCALE
+            ), axis = -1) / 255.
+        ]
     }
 )
+act = np.reshape(act[0], [28, 28])
 plt.imshow(act, cmap = 'gray')
 plt.show()
     

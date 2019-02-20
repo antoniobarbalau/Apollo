@@ -2,6 +2,7 @@ import math
 import os
 import shutil
 import tensorflow as tf
+import numpy as np
 
 class Coordinator(object):
 
@@ -16,7 +17,8 @@ class Coordinator(object):
                  record_paths_placeholder = 'record_paths:0',
                  batch_size_tensor = 'batch_size:0',
                  iterator_initializer = 'iterator_initializer',
-                 next_batch = 'next_batch'):
+                 next_batch = 'next_batch',
+                 validation = None):
 
         self.ckpt_meta_path = ckpt_meta_path
         self.record_paths = record_paths
@@ -28,27 +30,31 @@ class Coordinator(object):
         self.optimizers = optimizers
         self.iterator_initializer = iterator_initializer
         self.next_batch = next_batch
+        self.validation = validation
 
         self.load_session()
         self.convert_placeholders_generators()
         self.load_tensors()
         self.load_operations()
+        self.summary_is_non_empty = self.summary and len(list(self.summary.keys())) > 1
         if self.summary:
             self.create_summary()
 
-        self.session.run(tf.global_variables_initializer())
+        # self.session.run(tf.global_variables_initializer())
+        if self.record_paths:
+            self.initialize_iterators()
 
-        self.epoch_n = -1
+        self.epoch_n = 0
 
 
     def train_epoch(self):
         self.epoch_n += 1
 
-        if self.record_paths:
-            self.initialize_iterators()
+        # if self.record_paths:
+        #     self.initialize_iterators()
         n_iterations = math.ceil(self.n_samples / self.batch_size)
         load_data = [self.operations[self.next_batch]] if self.record_paths else []
-        summary = [self.summary_merged] if self.summary else []
+        summary = [self.summary_merged] if self.summary_is_non_empty else []
         for iteration_n in range(n_iterations):
             feed_dict = {
                 name: generator(iteration_n, self.batch_size)
@@ -63,34 +69,46 @@ class Coordinator(object):
                 summary,
                 feed_dict = feed_dict
             )
-            if self.summary:
+            if self.summary_is_non_empty:
                 self.summary_writer.add_summary(
                     results[-1],
                     (self.epoch_n * n_iterations) + iteration_n
                 )
 
+        if self.validation:
+            if self.epoch_n % self.validation['every'] == 0:
+                self.run_validation()
 
-    def eval(self, tensor_names):
-        if self.record_paths:
-            self.initialize_iterators()
+
+    def run_validation(self):
+        # if self.record_paths:
+        #     self.initialize_iterators()
+        n_iterations = math.ceil(self.n_samples / self.batch_size)
         load_data = [self.operations[self.next_batch]] if self.record_paths else []
-
-        feed_dict = {
-            name: generator(0, 0)
-            for name, generator in self.placeholders.items()
-            if name in self.valid_placeholders
-        }
-        results = self.session.run(
-            to_eval + load_data +
-            [
-                self.operations[optimizer_name]
-                for optimizer_name in self.optimizers
-            ],
-            feed_dict = feed_dict
-        )
-
-        return results[:len(tensor_names)]
-
+        s = 0
+        for iteration_n in range(n_iterations):
+            feed_dict = {
+                name: generator(iteration_n, self.batch_size)
+                for name, generator in self.placeholders.items()
+            }
+            results = self.session.run(
+                load_data +
+                [
+                    self.tensors[self.validation['accuracy_sum']]
+                ],
+                feed_dict = feed_dict
+            )
+            print(results[-1])
+            s += results[-1]
+        print(s)
+        summary = tf.Summary(value = [
+            tf.Summary.Value(
+                tag = 'validation_accuracy',
+                simple_value = s / self.n_samples
+            )
+        ])
+        self.summary_writer.add_summary(summary, self.epoch_n)
+        # print(self.epoch_n)
 
     def convert_placeholders_generators(self):
         for elem in self.placeholders:
@@ -98,8 +116,8 @@ class Coordinator(object):
                 self.placeholders[elem] = lambda a, b: self.placeholders[elem]
 
 
-    def save(self):
-        self.saver.save(self.session, self.ckpt_meta_path.replace('.meta', ''))
+    # def save(self):
+    #     self.saver.save(self.session, self.ckpt_meta_path.replace('.meta', ''))
 
 
     def create_summary(self):
@@ -118,7 +136,9 @@ class Coordinator(object):
 
         if os.path.exists(self.summary['path']):
             shutil.rmtree(self.summary['path'])
-        self.summary_merged = tf.summary.merge_all()
+
+        if self.summary_is_non_empty:
+            self.summary_merged = tf.summary.merge_all()
         self.summary_writer = tf.summary.FileWriter(
             self.summary['path'],
             self.graph
@@ -148,6 +168,10 @@ class Coordinator(object):
             tensor_names += [
                 image['tensor']
                 for image in self.summary.get('images', [])
+            ]
+        if self.validation:
+            tensor_names += [
+                self.validation['accuracy_sum']
             ]
 
         for tensor_name in tensor_names:

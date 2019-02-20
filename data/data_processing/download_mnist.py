@@ -6,7 +6,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('../raw/MNIST_data', one_hot = False)
 
 
-folders = ['../raw/mnist_train', '../raw/mnist_val', '../raw/mnist_test']
+folders = ['../raw/mnist/train', '../raw/mnist/val', '../raw/mnist/test']
 sets = [mnist.train, mnist.validation, mnist.test]
 
 for folder, data in zip(folders, sets):
