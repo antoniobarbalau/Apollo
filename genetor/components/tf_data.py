@@ -41,6 +41,8 @@ def tf_data(input, **params):
     dataset = tf.data.TFRecordDataset(record_paths_tensor)
     dataset = dataset.map(parse_sample)
     dataset = dataset.repeat()
+    dataset = dataset.shuffle(100000)
+
     batch_size = tf.placeholder(
         dtype = tf.int64,
         shape = [],

@@ -37,15 +37,15 @@ if os.path.exists(output_dir):
     shutil.rmtree(output_dir)
 
 for usage in data.keys():
-    for index, (image, label) in enumerate(
-            zip(data[usage]['images'], data[usage]['labels'])
-    ):
-        output_folder = os.path.join(output_dir, f'{usage}/{label}/')
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
+    output_folder = os.path.join(output_dir, f'{usage}/')
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
+    for index, (image, label) in enumerate(
+        zip(data[usage]['images'], data[usage]['labels'])
+    ):
         cv2.imwrite(
-            os.path.join(output_folder, f'{index}.png'),
+            os.path.join(output_folder, f'{label}_{index}.png'),
             image
         )
 

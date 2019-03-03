@@ -1,4 +1,5 @@
 import tensorflow as tf
+from .basic import to_tensor
 
 
 def squash(input, axis = -1, epsilon = 1e-7, name = 'squashed'):
@@ -127,7 +128,7 @@ def caps_margin_loss(caps, **params):
         absent_weight = params['absent_weight']
         present_threshold = params['present_threshold']
 
-        target_classes = params['target_classes']
+        target_classes = to_tensor(params['target_classes'])
         n_classes = caps.shape[1].value
 
         target_one_hot = tf.one_hot(target_classes, depth = n_classes,

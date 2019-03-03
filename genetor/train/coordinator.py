@@ -18,7 +18,8 @@ class Coordinator(object):
                  batch_size_tensor = 'batch_size:0',
                  iterator_initializer = 'iterator_initializer',
                  next_batch = 'next_batch',
-                 validation = None):
+                 validation = None,
+                 return_values = []):
 
         self.ckpt_meta_path = ckpt_meta_path
         self.record_paths = record_paths
@@ -31,6 +32,7 @@ class Coordinator(object):
         self.iterator_initializer = iterator_initializer
         self.next_batch = next_batch
         self.validation = validation
+        self.return_values = return_values
 
         self.load_session()
         self.convert_placeholders_generators()
@@ -44,40 +46,60 @@ class Coordinator(object):
         if self.record_paths:
             self.initialize_iterators()
 
-        self.epoch_n = 0
+        self.epoch_n = -1
+        self.n_iterations = math.ceil(self.n_samples / self.batch_size)
+        self.iteration_n = self.n_iterations - 1
 
+
+    def train_iteration(self):
+        self.iteration_n += 1
+        if self.iteration_n == self.n_iterations:
+            self.epoch_n += 1
+            self.iteration_n = 0
+
+        load_data = [self.operations[self.next_batch]] if self.record_paths else []
+        summary = [self.summary_merged] if self.summary_is_non_empty else []
+        return_values = [
+            self.tensors[tensor_name]
+            for tensor_name in self.return_values
+        ]
+
+        feed_dict = {
+            name: generator(self.iteration_n, self.batch_size)
+            for name, generator in self.placeholders.items()
+        }
+        results = self.session.run(
+            return_values +
+            load_data +
+            [
+                self.operations[optimizer_name]
+                for optimizer_name in self.optimizers
+            ] +
+            summary,
+            feed_dict = feed_dict
+        )
+        if self.summary_is_non_empty:
+            self.summary_writer.add_summary(
+                results[-1],
+                (self.epoch_n * self.n_iterations) + self.iteration_n
+            )
+
+        return results[:len(return_values)]
 
     def train_epoch(self):
         self.epoch_n += 1
+        self.iteration_n = -1
 
-        # if self.record_paths:
-        #     self.initialize_iterators()
-        n_iterations = math.ceil(self.n_samples / self.batch_size)
-        load_data = [self.operations[self.next_batch]] if self.record_paths else []
-        summary = [self.summary_merged] if self.summary_is_non_empty else []
-        for iteration_n in range(n_iterations):
-            feed_dict = {
-                name: generator(iteration_n, self.batch_size)
-                for name, generator in self.placeholders.items()
-            }
-            results = self.session.run(
-                load_data +
-                [
-                    self.operations[optimizer_name]
-                    for optimizer_name in self.optimizers
-                ] +
-                summary,
-                feed_dict = feed_dict
-            )
-            if self.summary_is_non_empty:
-                self.summary_writer.add_summary(
-                    results[-1],
-                    (self.epoch_n * n_iterations) + iteration_n
-                )
+        return_values = []
+
+        for _ in range(self.n_iterations):
+            return_values.append(self.train_iteration())
 
         if self.validation:
             if self.epoch_n % self.validation['every'] == 0:
                 self.run_validation()
+
+        return np.array(return_values)
 
 
     def run_validation(self):
@@ -116,13 +138,13 @@ class Coordinator(object):
                 self.placeholders[elem] = lambda a, b: self.placeholders[elem]
 
 
-    # def save(self):
-    #     self.saver.save(self.session, self.ckpt_meta_path.replace('.meta', ''))
+    def save(self):
+        self.saver.save(self.session, self.ckpt_meta_path.replace('.meta', ''))
 
 
     def create_summary(self):
         for tensor_name in self.summary.get('scalars', []):
-            tf.summary.scalar('haha', self.tensors[tensor_name])
+            tf.summary.scalar(tensor_name, self.tensors[tensor_name])
 
         for image in self.summary.get('images', []):
             tf.summary.image(
@@ -162,6 +184,8 @@ class Coordinator(object):
                 self.record_paths_placeholder,
                 self.batch_size_tensor
             ]
+        if self.return_values:
+            tensor_names += self.return_values
         if self.summary:
             tensor_names += self.summary.get('scalars', [])
             tensor_names += self.summary.get('text', [])
