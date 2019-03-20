@@ -21,27 +21,64 @@ input = tf.placeholder(
     dtype = tf.float32,
     name = 'input'
 )
-target = tf.placeholder(
-    shape = [None],
-    dtype = tf.int64,
-    name = 'target'
-)
 architecture = [{
     'type': 'input',
     'input': input,
 }, *genetor.builder.new_architecture(
     model = 'cnn',
     structure = {
-        'filters': [16, 36],
-        'kernels': [5] * 2,
-        'units': [128, 10]
+        'filters': [16, 32],
+        'kernels': [5] * 3,
     }
 ), {
-    'type': 'cross_entropy',
+    'type': 'input',
+    'output_label': 'conv_output'
+}, {
+    'type': 'flatten',
+    'output_label': 'conv_output_flattened'
+}]
+conv_output_flattened = genetor.builder.new_graph(
+     architecture = architecture
+)
+reshape_shape = tf.get_default_graph().get_tensor_by_name('conv_output:0').shape
+reshape_shape = [-1, *[dim.value for dim in reshape_shape[1:]]]
+architecture = [{
+    'type': 'input',
+    'input': conv_output_flattened
+}, {
+    'type': 'fc',
+    'output_label': 'encoding',
     'params': {
-        'target': 'target:0'
+        'units': 10
+    }
+}, {
+    'type': 'fc',
+    'params': {
+        'units': conv_output_flattened.shape[1].value
+    }
+}, {
+    'type': 'reshape',
+    'params': {
+        'shape': reshape_shape
+    }
+}, *genetor.builder.new_architecture(
+    model = 'deconv',
+    structure = {
+        'filters': [32, 1],
+        'kernels': [5] * 3,
+        'strides': [2] * 3,
+        'type': 'resize_up_conv'
+    }
+), {
+    'type': 'sigmoid',
+    'output_label': 'reconstruction'
+}, {
+    'type': 'l2_loss',
+    'params': {
+        'target': input
     }
 }]
+
 
 loss = genetor.builder.new_graph(architecture = architecture)
 optimizer = tf.train.AdamOptimizer(1e-4).minimize(loss, name = 'optimizer')

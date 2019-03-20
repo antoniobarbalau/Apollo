@@ -10,8 +10,8 @@ import os
 import tensorflow as tf
 import random
 
-os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+# os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 train_filenames = glob.glob('../data/raw/mnist/train/*')
 random.shuffle(train_filenames)
@@ -42,21 +42,23 @@ trainer = genetor.train.Coordinator(
     optimizers = ['optimizer'],
     n_samples = len(train_filenames),
     placeholders = {
-        'input:0': input_feeder,
-        'target:0': target_feeder
+        'input:0': input_feeder
     },
     summary = {
         'path': '../trained_models/summaries/mnist',
-        'scalars': ['cross_entropy_0/accuracy_mean:0'],
-    },
-    return_values = ['cross_entropy_0/accuracy_sum:0']
+        'images': [{
+            'tensor': 'reconstruction:0',
+            'max_outputs': 4,
+            'name': 'reconstruction'
+        }]
+    }
 )
 
 # trainer.train_iteration()
 while(1):
-    val = trainer.train_epoch()
+    trainer.train_epoch()
     random.shuffle(train_filenames)
-    print(np.sum(val[:, 0]) / trainer.n_samples)
+    # print(np.sum(val[:, 0]) / trainer.n_samples)
 
 
 
