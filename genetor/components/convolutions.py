@@ -4,6 +4,12 @@ from .initializations import default_initialization
 
 
 def conv(input, **params):
+    # return tf.layers.conv2d(
+    #     inputs = input,
+    #     filters = params['filters'],
+    #     kernel_size = params['kernel_size'],
+    #     activation = tf.nn.relu
+    # )
     with tf.variable_scope(params['name']):
         kernel_size = params['kernel_size']
         filters = params['filters']
@@ -18,7 +24,7 @@ def conv(input, **params):
             name = 'kernel',
             dtype = tf.float32)
         bias = tf.Variable(
-            initial_value = tf.zeros(shape = [filters]),
+            initial_value = tf.zeros(shape = [filters]) + 0.5,
             name = 'bias',
             dtype = tf.float32)
 

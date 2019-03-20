@@ -45,6 +45,8 @@ class Coordinator(object):
         # self.session.run(tf.global_variables_initializer())
         if self.record_paths:
             self.initialize_iterators()
+        else:
+            self.n_samples = n_samples
 
         self.epoch_n = -1
         self.n_iterations = math.ceil(self.n_samples / self.batch_size)
@@ -52,6 +54,7 @@ class Coordinator(object):
 
 
     def train_iteration(self):
+        # print('ok')
         self.iteration_n += 1
         if self.iteration_n == self.n_iterations:
             self.epoch_n += 1
@@ -68,6 +71,16 @@ class Coordinator(object):
             name: generator(self.iteration_n, self.batch_size)
             for name, generator in self.placeholders.items()
         }
+        # print(
+        #     return_values +
+        #     load_data +
+        #     [
+        #         self.operations[optimizer_name]
+        #         for optimizer_name in self.optimizers
+        #     ] +
+        #     summary
+        # )
+        # print(feed_dict)
         results = self.session.run(
             return_values +
             load_data +
@@ -95,9 +108,9 @@ class Coordinator(object):
         for _ in range(self.n_iterations):
             return_values.append(self.train_iteration())
 
-        if self.validation:
-            if self.epoch_n % self.validation['every'] == 0:
-                self.run_validation()
+        # if self.validation:
+        #     if self.epoch_n % self.validation['every'] == 0:
+        #         self.run_validation()
 
         return np.array(return_values)
 
@@ -214,8 +227,6 @@ class Coordinator(object):
                 self.next_batch,
                 self.iterator_initializer
             ]
-        else:
-            self.n_samples = self.placeholders['n_samples:0']
         for operation_name in operation_names:
             self.operations[operation_name] = self.graph.get_operation_by_name(
                 operation_name

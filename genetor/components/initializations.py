@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 
 def xavier_over_2(shape, variable_type):
@@ -16,7 +17,16 @@ def xavier_over_2(shape, variable_type):
 
 def default_initialization(shape):
     return tf.random_normal(shape = shape,
-                            mean = 0.0,
-                            stddev = 0.05,
-                            dtype = tf.float32)
+                            dtype = tf.float32,
+                            stddev = 0.05)
+    # limit = np.sqrt(6 / (np.prod(shape[:-1]) + shape[-1]) )
+    # return tf.random_uniform(
+    #     shape = shape,
+    #     minval = -limit,
+    #     maxval = limit,
+    # )
+    # return tf.random_normal(shape = shape,
+    #                         mean = 0.0,
+    #                         stddev = 5e-2,
+    #                         dtype = tf.float32) #/ np.sqrt(np.prod(shape[:-1]) / 2)
 

@@ -50,6 +50,7 @@ def batch_norm(input, **params):
 
 
 def fc(input, **params):
+    # return tf.layers.dense(input, units = params['units'], activation = tf.nn.relu)
     with tf.variable_scope(params.get('name', '')):
         n_inputs = input.shape[-1].value
         n_outputs = params['units']
@@ -60,7 +61,8 @@ def fc(input, **params):
             name = 'kernel',
             dtype = tf.float32)
         bias = tf.Variable(
-            initial_value = tf.zeros(shape = [n_outputs]),
+            initial_value = tf.zeros(shape = [n_outputs]) + 0.5,
+            # initial_value = initialization(shape = [n_outputs]),
             name = 'bias',
             dtype = tf.float32)
 

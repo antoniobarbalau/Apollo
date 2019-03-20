@@ -20,6 +20,11 @@ def generate_architecture(structure):
             }
         }, {
             'type': 'max_pool'
+        # }, {
+        #     'type': 'batch_norm',
+        #     'params': {
+        #         'is_training': True
+        #     }
         }]
     if units:
         architecture += [{

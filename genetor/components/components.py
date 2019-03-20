@@ -20,7 +20,7 @@ def xavier_over_2(shape, variable_type):
 def default_initialization(shape):
     return tf.random_normal(shape = shape,
                             mean = 0.0,
-                            stddev = 0.05,
+                            stddev = 1e-2,
                             dtype = tf.float32)
 
 
@@ -243,6 +243,7 @@ def fc(input, **params):
             dtype = tf.float32)
         bias = tf.Variable(
             initial_value = tf.zeros(shape = [n_outputs]),
+            # initial_value = initialization(shape = [n_outputs]),
             name = 'bias',
             dtype = tf.float32)
 
