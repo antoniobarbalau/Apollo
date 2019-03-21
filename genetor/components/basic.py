@@ -61,7 +61,7 @@ def fc(input, **params):
             name = 'kernel',
             dtype = tf.float32)
         bias = tf.Variable(
-            initial_value = tf.zeros(shape = [n_outputs]) + 0.5,
+            initial_value = tf.zeros(shape = [n_outputs]) + 0.05,
             # initial_value = initialization(shape = [n_outputs]),
             name = 'bias',
             dtype = tf.float32)

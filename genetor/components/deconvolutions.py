@@ -48,15 +48,26 @@ def resize_up_conv(input, **params):
     with tf.variable_scope(params['name']):
         kernel_size = params['kernel_size']
         filters = params['filters']
-        strides = [1, params['stride'], params['stride'], 1]
+        # strides = [1, params['stride'], params['stride'], 1]
+        strides = [1, 1, 1, 1]
         padding = params['padding']
-        output_shape = tf.shape(to_tensor(params['output_shape']))
+        # output_shape = tf.shape(to_tensor(params['output_shape']))
+        # output_shape = [int(input.shape[1].value * params['stride']), int(input.shape[2].value * params['stride'])]
+        if 'output_shape' in params:
+            output_shape = params['output_shape']
+        else:
+            output_shape = [
+                int(input.shape[1].value * params['stride']),
+                int(input.shape[2].value * params['stride'])
+            ]
+
         initialization = params['initialization']
 
-        print(input.shape)
+        # print(input.shape)
         input = tf.image.resize_images(input,
-                                       size = output_shape[1:3])
-        print(input.shape)
+                                       size = output_shape)
+        # input = tf.keras.layers.UpSampling2D(input)
+        # print(input.shape)
 
         kernel = tf.Variable(
             initial_value = initialization(

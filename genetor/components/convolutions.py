@@ -24,7 +24,7 @@ def conv(input, **params):
             name = 'kernel',
             dtype = tf.float32)
         bias = tf.Variable(
-            initial_value = tf.zeros(shape = [filters]) + 0.5,
+            initial_value = tf.zeros(shape = [filters]) + 0.05,
             name = 'bias',
             dtype = tf.float32)
 
