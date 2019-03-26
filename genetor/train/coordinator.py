@@ -71,6 +71,7 @@ class Coordinator(object):
             name: generator(self.iteration_n, self.batch_size)
             for name, generator in self.placeholders.items()
         }
+        # print(feed_dict)
         # print(
         #     return_values +
         #     load_data +

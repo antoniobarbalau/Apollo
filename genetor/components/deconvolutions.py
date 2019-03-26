@@ -63,11 +63,8 @@ def resize_up_conv(input, **params):
 
         initialization = params['initialization']
 
-        # print(input.shape)
         input = tf.image.resize_images(input,
                                        size = output_shape)
-        # input = tf.keras.layers.UpSampling2D(input)
-        # print(input.shape)
 
         kernel = tf.Variable(
             initial_value = initialization(
@@ -93,7 +90,6 @@ def resize_up_conv(input, **params):
             activation = tf.identity
         output = activation(output_raw,
                             name = 'output')
-        print(output.shape)
 
     return output
 

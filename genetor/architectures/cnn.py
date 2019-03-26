@@ -2,8 +2,8 @@ from .. import components
 
 
 def generate_architecture(structure):
-    filters = structure['filters']
-    kernels = structure['kernels']
+    filters = structure.get('filters', [])
+    kernels = structure.get('kernels', [])
     units = structure.get('units', [])
     strides = structure.get('strides', [])
     biasless = structure.get('biasless', False)
