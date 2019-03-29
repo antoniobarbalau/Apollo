@@ -4,12 +4,6 @@ from .initializations import default_initialization
 
 
 def conv(input, **params):
-    # return tf.layers.conv2d(
-    #     inputs = input,
-    #     filters = params['filters'],
-    #     kernel_size = params['kernel_size'],
-    #     activation = tf.nn.relu
-    # )
     with tf.variable_scope(params['name']):
         kernel_size = params['kernel_size']
         filters = params['filters']
@@ -17,6 +11,8 @@ def conv(input, **params):
         padding = params['padding']
         initialization = params['initialization']
         biasless = params.get('biasless', False)
+        batch_norm_is_training = params.get('batch_norm_is_training', None)
+        dropout_rate = params.get('dropout_rate', None)
 
         kernel = tf.Variable(
             initial_value = initialization(
@@ -24,7 +20,7 @@ def conv(input, **params):
             name = 'kernel',
             dtype = tf.float32)
         bias = tf.Variable(
-            initial_value = tf.zeros(shape = [filters]) + 0.05,
+            initial_value = tf.zeros(shape = [filters]),
             name = 'bias',
             dtype = tf.float32)
 
@@ -39,6 +35,15 @@ def conv(input, **params):
                                 name = 'output_raw')
         else:
             output_raw = filtered_input
+
+        if batch_norm_is_training is not None:
+            output_raw = tf.contrib.layers.batch_norm(
+                output_raw,
+                is_training = batch_norm_is_training
+            )
+
+        if dropout_rate is not None:
+            output_raw = tf.layers.dropout(output_raw, rate = dropout_rate)
 
         activation = params.get('activation', None)
         if activation is None:
