@@ -39,10 +39,11 @@ trainer = genetor.train.Coordinator(
     ckpt_meta_path = '../trained_models/checkpoints/mnist/ckpt.meta',
     # record_paths = glob.glob(f'../data/tf_records/mnist/train/*.tfrecords'),
     batch_size = 20,
-    optimizers = ['optimizer'],
+    optimizers = [],
     n_samples = len(train_filenames),
     placeholders = {
-        'input:0': input_feeder
+        'input:0': input_feeder,
+        'target:0': target_feeder
     },
     # summary = {
     #     'path': '../trained_models/summaries/mnist',
@@ -53,13 +54,13 @@ trainer = genetor.train.Coordinator(
     #     }]
     # },
     return_values = [
-        'loss:0'
+        'output:0'
     ]
 )
 
 for _ in range(40):
     losses = trainer.train_epoch()
-    print(np.mean(losses))
+    print(losses)
     # print('ok')
     random.shuffle(train_filenames)
     trainer.save()

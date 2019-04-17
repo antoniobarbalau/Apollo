@@ -3,6 +3,10 @@ sys.path.append('..')
 import genetor
 import glob
 import tensorflow as tf
+import os
+
+os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 session = tf.Session()
 
@@ -21,20 +25,30 @@ input = tf.placeholder(
     dtype = tf.float32,
     name = 'input'
 )
+target = tf.placeholder(
+    shape = [None],
+    dtype = tf.int64,
+    name = 'target'
+)
 architecture = [{
-    'type': 'input',
+    'type': 'flatten',
     'input': input,
 }, {
-    'type': 'hyperbolic_linear'
+    'type': 'h_linear'
+}, {
+    'type': 'cross_entropy',
+    'output_label': 'loss',
+    'params': {
+        'target': target
+    }
 }]
 
 loss = genetor.builder.new_graph(architecture = architecture)
-print(loss.shape)
 
-# optimizer = tf.train.AdamOptimizer().minimize(loss, name = 'optimizer')
+optimizer = tf.train.AdamOptimizer().minimize(loss, name = 'optimizer')
 
-# saver = tf.train.Saver()
-# session.run(tf.global_variables_initializer())
-# saver.save(session, '../trained_models/checkpoints/mnist/ckpt')
+saver = tf.train.Saver()
+session.run(tf.global_variables_initializer())
+saver.save(session, '../trained_models/checkpoints/mnist/ckpt')
 
 

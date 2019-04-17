@@ -76,6 +76,9 @@ DEFAULT_PARAMS = {
     'gan_loss': {
         'generator_scope': 'generator',
         'discriminator_scope': 'discriminator'
+    },
+    'h_linear': {
+        'c': 0.05
     }
 }
 
