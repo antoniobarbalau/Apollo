@@ -8,3 +8,4 @@ from .initializations import *
 from .losses import *
 from .pooling import *
 from .tf_data import *
+from .hyperbolic import *
