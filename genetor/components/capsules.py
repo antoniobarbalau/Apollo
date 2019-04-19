@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from .basic import to_tensor
 
 
@@ -112,7 +113,11 @@ def caps(input, **params):
     return output
 
 
-def safe_norm(input, axis = -1, epsilon = 1e-7, keep_dims = False, name = 'norm'):
+def safe_norm(input, axis = -1, epsilon = 1e-7, keep_dims = False, name = 'norm', keepdims = False):
+    if keepdims == True:
+        keep_dims = keepdims
+    if type(input) is float:
+        return tf.sqrt(tf.square(input) + epsilon)
     squared_norm = tf.reduce_sum(tf.square(input),
                                  axis = axis,
                                  keepdims = keep_dims)

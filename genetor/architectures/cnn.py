@@ -1,4 +1,5 @@
 from .. import components
+import tensorflow as tf
 
 
 def generate_architecture(structure):
@@ -26,7 +27,7 @@ def generate_architecture(structure):
                 'kernel_size': k,
                 'stride': 1 if not strides else strides[i],
                 'biasless': biasless,
-                'activation': components.gelu,
+                'activation': tf.nn.relu,
                 **conv_params
             }
         }, {
@@ -46,7 +47,7 @@ def generate_architecture(structure):
             'type': 'fc',
             'params': {
                 'units': u,
-                'activation': components.gelu
+                'activation': tf.nn.relu
             }
         }]
 
