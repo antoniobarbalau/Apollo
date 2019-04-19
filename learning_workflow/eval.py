@@ -13,7 +13,7 @@ import random
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
-train_filenames = glob.glob('../data/raw/mnist/train/*')
+train_filenames = glob.glob('../data/raw/mnist/test/*')
 random.shuffle(train_filenames)
 
 def input_feeder(iteration_n, batch_size):
@@ -39,7 +39,7 @@ trainer = genetor.train.Coordinator(
     ckpt_meta_path = '../trained_models/checkpoints/mnist/ckpt.meta',
     # record_paths = glob.glob(f'../data/tf_records/mnist/train/*.tfrecords'),
     batch_size = 64,
-    optimizers = ['optimizer'],
+    optimizers = [],
     n_samples = len(train_filenames),
     placeholders = {
         'input:0': input_feeder,

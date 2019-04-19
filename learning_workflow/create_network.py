@@ -31,13 +31,48 @@ target = tf.placeholder(
     name = 'target'
 )
 architecture = [{
-    'type': 'flatten',
+    'type': 'input',
     'input': input,
+}, *genetor.builder.new_architecture(
+    model = 'cnn',
+    structure = {
+        'filters': [20, 50],
+        'kernels': [5] * 2,
+        'units': [500]
+    }
+), {
+    'type': 'fc',
+    'params': {
+        'units': 100,
+        'activation': None
+    }
 }, {
-    'type': 'h_linear'
+# x = tf.layers.conv2d(input, filters = 20, kernel_size = 5, activation = tf.nn.relu,
+#                      padding = 'same')
+# x = tf.layers.max_pooling2d(x, pool_size = (2, 2), strides = (2, 2), padding = 'same')
+# x = tf.layers.conv2d(x, filters = 50, kernel_size = 5, activation = tf.nn.relu,
+#                      padding = 'same')
+# x = tf.layers.max_pooling2d(x, pool_size = (2, 2), strides = (2, 2), padding = 'same')
+# x = tf.layers.flatten(x)
+# x = tf.layers.dense(x, units = 500, activation = tf.nn.relu)
+# x = tf.layers.dense(x, units = 100)
+# architecture = [{
+    'type': 'to_poincare',
+    # 'input': x,
+    'params': {
+        # 'c': 0.05
+        'c': 1.
+    }
+}, {
+    'type': 'h_mlr',
+    'params': {
+        # 'c': 0.05,
+        'c': 1.,
+        'ball_dim': 100,
+        'n_classes': 10
+    }
 }, {
     'type': 'cross_entropy',
-    'output_label': 'loss',
     'params': {
         'target': target
     }
