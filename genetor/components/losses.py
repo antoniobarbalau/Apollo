@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from .basic import to_tensor
 
 
@@ -183,4 +184,71 @@ def siamese_margin_loss(input, **params):
                           name = 'output')
 
     return loss
+
+
+def proto_loss(input, **params):
+    ways = params['ways']
+    shots_s = params['shots_s']
+    shots_q = params['shots_q']
+
+    enc_size = input.shape[-1].value
+
+    samples = tf.reshape(input, [-1, ways, shots_s + shots_q, enc_size])
+
+    s = samples[:, :, :shots_s, :]
+    q = samples[:, :, shots_s:, :]
+
+    c = tf.reduce_mean(s, axis = -2)
+    c_tiled = tf.expand_dims(c, axis = 2)
+    c_tiled = tf.tile(c_tiled, [1, 1, shots_q, 1])
+
+    intra_cluster = tf.reduce_sum(tf.square(q - c_tiled), axis = -1)
+
+    loss_intra = tf.reduce_mean(intra_cluster)
+
+
+    c = tf.tile(c, [1, shots_q, 1])
+    c = tf.reshape(c, [-1, ways, shots_q, enc_size])
+    c = tf.expand_dims(c, axis = 1)
+    c = tf.tile(c, [1, ways, 1, 1, 1])
+
+    q = tf.expand_dims(q, axis = -2)
+    q = tf.tile(q, [1, 1, 1, ways, 1])
+
+    target = np.arange(ways)
+    target = np.expand_dims(target, axis = -1)
+    target = np.tile(target, [1, shots_q])
+    target = np.ravel(target)
+    target = tf.constant(target)
+
+    target = tf.one_hot(target, depth = ways)
+    target = tf.reshape(target, [ways, shots_q, ways])
+    batch_size = tf.shape(c)[0]
+    target = tf.expand_dims(target, axis = 0)
+    target = tf.tile(target, [batch_size, 1, 1, 1])
+    target = 1. - target
+
+    loss_inter = tf.reduce_sum(tf.square(c - q), axis = -1)
+    loss_inter = -1. * loss_inter * target
+    loss_inter = tf.exp(loss_inter)
+    loss_inter = tf.log(tf.reduce_sum(loss_inter))
+
+    # to make the first cluster more separated
+    # first_cluster = c[:, 0]
+    # other_clusters = c[:, 1:]
+    # first_cluster = tf.expand_dims(first_cluster, axis = 1)
+    # first_cluster = tf.tile(first_cluster, [1, ways - 1, 1])
+
+    # loss_inter = tf.reduce_sum(
+    #     tf.square(first_cluster - other_clusters),
+    #     axis = -1
+    # )
+    # loss_inter = tf.reduce_mean(loss_inter)
+
+    output = tf.add(
+        loss_intra, loss_inter,
+        name = 'output'
+    )
+
+    return output
 

@@ -10,6 +10,11 @@ def sigmoid(input, **params):
     return output
 
 
+def relu(input, **params):
+    output = tf.nn.relu(input)
+    return output
+
+
 def reshape(input, **params):
     output = tf.reshape(input, params['shape'])
     return output
