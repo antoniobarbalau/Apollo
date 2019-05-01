@@ -9,25 +9,17 @@ def h_lambda(c, x):
 
 
 def mobius_add(c, x, y):
-    # print(y.shape)
-    # print(tf.reduce_sum(x * y, axis = -1,keepdims = True).shape
-
-    # )
-    # print(x.shape, y.shape)
     numerator = (
         (1. + 2. * c * tf.reduce_sum(x * y, axis = -1, keepdims = True) +
          c * tf.square(safe_norm(y, keepdims = True))) * x +
         (1. - c * tf.square(safe_norm(x, keepdims = True))) * y
     )
-    # print(numerator.shape)
     denominator = (
         1. + 2. * c * tf.reduce_sum(x * y, axis = -1, keepdims = True) +
         c ** 2. * tf.square(safe_norm(x, keepdims = True)) * tf.square(safe_norm(y, keepdims = True))
     )
 
-    output = numerator / denominator
-    
-    # print(output.shape)
+    output = numerator / (denominator + 1e-6)
 
     return output
 
@@ -157,6 +149,10 @@ def project(c, x):
     return output
 
 
+def h_projection(input, **params):
+    return project(1., input)
+
+
 def h_exp0(c, u):
     u_norm = safe_norm(u, axis = -1, keepdims = True)
     u_norm = tf.clip_by_value(
@@ -168,6 +164,10 @@ def h_exp0(c, u):
 
     return gamma_1
 
+
+def h_exp_map(input, **params):
+    c = params.get('c', 1.)
+    return h_exp0(c, input)
 
 
 def to_poincare(input, **params):
@@ -246,4 +246,85 @@ def h_mlr(input, **params):
     return logits
 
 
+def h_avg(input, c = 1.):
+    gamma = (
+        1. / 
+        tf.sqrt(
+            1. - c * 
+            tf.reduce_sum(tf.square(input), axis = -1, keepdims = True)
+        )
+    )
+    output = (
+        tf.reduce_sum(input * gamma, axis = -2) /
+        tf.reduce_sum(gamma, axis = -2)
+    )
+
+    return output
+
+
+def h_distance(x, y, c = 1.):
+    output = (
+        2. / tf.sqrt(c) *
+        tf.atanh(
+            tf.sqrt(c) * safe_norm(mobius_add(c, -x, y))
+        )
+    )
+
+    return output
+
+
+def h_proto_loss(input, **params):
+    ways = params['ways']
+    shots_s = params['shots_s']
+    shots_q = params['shots_q']
+
+    enc_size = input.shape[-1].value
+
+    samples = tf.reshape(input, [-1, ways, shots_s + shots_q, enc_size])
+
+    s = samples[:, :, :shots_s, :]
+    q = samples[:, :, shots_s:, :]
+
+    c = h_avg(s)
+    c_tiled = tf.expand_dims(c, axis = 2)
+    c_tiled = tf.tile(c_tiled, [1, 1, shots_q, 1])
+
+    intra_cluster = h_distance(q, c_tiled)
+
+    loss_intra = tf.reduce_mean(intra_cluster)
+
+
+    c = tf.tile(c, [1, shots_q, 1])
+    c = tf.reshape(c, [-1, ways, shots_q, enc_size])
+    c = tf.expand_dims(c, axis = -2)
+    c = tf.tile(c, [1, 1, 1, ways, 1])
+
+    q = tf.expand_dims(q, axis = -2)
+    q = tf.tile(q, [1, 1, 1, ways, 1])
+
+    target = np.arange(ways)
+    target = np.expand_dims(target, axis = -1)
+    target = np.tile(target, [1, shots_q])
+    target = np.ravel(target)
+    target = tf.constant(target)
+
+    target = tf.one_hot(target, depth = ways)
+    target = tf.reshape(target, [ways, shots_q, ways])
+    batch_size = tf.shape(c)[0]
+    target = tf.expand_dims(target, axis = 0)
+    target = tf.tile(target, [batch_size, 1, 1, 1])
+    target = 1. - target
+
+    loss_inter = h_distance(c, q)
+    loss_inter = -1. * loss_inter * target
+    loss_inter = tf.exp(loss_inter)
+    loss_inter = tf.log(tf.reduce_sum(loss_inter))
+
+
+    output = tf.add(
+        loss_intra, loss_inter,
+        name = 'output'
+    )
+
+    return output
 

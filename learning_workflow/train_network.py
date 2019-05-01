@@ -70,6 +70,10 @@ def target_feeder(iteration_n, batch_size):
     ]
 
 
+def lr_feeder(a, b):
+    return 1e-3 * (.5 ** (trainer.epoch_n // 20))
+
+
 trainer = genetor.train.Coordinator(
     ckpt_meta_path = '../trained_models/checkpoints/mnist/ckpt.meta',
     batch_size = 10,
@@ -77,7 +81,8 @@ trainer = genetor.train.Coordinator(
     n_samples = 1000,
     placeholders = {
         'input:0': input_feeder_proto,
-        'target:0': target_feeder
+        'target:0': target_feeder,
+        'learning_rate:0': lr_feeder
     },
     return_values = [
         'loss:0'

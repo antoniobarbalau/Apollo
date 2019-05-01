@@ -209,8 +209,8 @@ def proto_loss(input, **params):
 
     c = tf.tile(c, [1, shots_q, 1])
     c = tf.reshape(c, [-1, ways, shots_q, enc_size])
-    c = tf.expand_dims(c, axis = 1)
-    c = tf.tile(c, [1, ways, 1, 1, 1])
+    c = tf.expand_dims(c, axis = -2)
+    c = tf.tile(c, [1, 1, 1, ways, 1])
 
     q = tf.expand_dims(q, axis = -2)
     q = tf.tile(q, [1, 1, 1, ways, 1])
@@ -233,17 +233,6 @@ def proto_loss(input, **params):
     loss_inter = tf.exp(loss_inter)
     loss_inter = tf.log(tf.reduce_sum(loss_inter))
 
-    # to make the first cluster more separated
-    # first_cluster = c[:, 0]
-    # other_clusters = c[:, 1:]
-    # first_cluster = tf.expand_dims(first_cluster, axis = 1)
-    # first_cluster = tf.tile(first_cluster, [1, ways - 1, 1])
-
-    # loss_inter = tf.reduce_sum(
-    #     tf.square(first_cluster - other_clusters),
-    #     axis = -1
-    # )
-    # loss_inter = tf.reduce_mean(loss_inter)
 
     output = tf.add(
         loss_intra, loss_inter,

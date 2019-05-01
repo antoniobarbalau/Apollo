@@ -7,6 +7,7 @@ import glob
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import genetor
 import os
 import pickle
 import random
@@ -90,13 +91,14 @@ for class_n in range(10):
         outputs += trainer.train_iteration()
     outputs = np.array(outputs)
     outputs = np.reshape(outputs, [-1, 256])
-    p = np.mean(outputs, axis = 0)
+    outputs = tf.constant(outputs)
+    p = genetor.components.h_avg(outputs)
+    p = trainer.session.run(p)
+    # p = np.mean(outputs, axis = 0)
     proto.append(p)
 
 proto = np.stack(proto)
 pickle.dump(proto, open('./protos.pkl', 'wb'))
-
-print(proto.shape)
 
 # for _ in range(100):
     # losses = trainer.train_epoch()

@@ -10,6 +10,12 @@ def generate_architecture(structure):
     biasless = structure.get('biasless', False)
     conv_dropout_rate = structure.get('conv_dropout_rate', None)
     batch_norm_is_training = structure.get('batch_norm_is_training', None)
+    activation = structure.get('activation', tf.nn.relu)
+    final_activation = structure.get('final_activation', None)
+    output_label = structure.get('output_label', None)
+
+    if type(kernels) is not list:
+        kernels = [kernels] * len(filters)
 
     conv_params = dict()
 
@@ -27,29 +33,39 @@ def generate_architecture(structure):
                 'kernel_size': k,
                 'stride': 1 if not strides else strides[i],
                 'biasless': biasless,
-                'activation': tf.nn.relu,
+                'activation': activation,
                 **conv_params
             }
         }, {
             'type': 'max_pool'
-        # }, {
-        #     'type': 'batch_norm',
-        #     'params': {
-        #         'is_training': True
-        #     }
         }]
-    if units:
-        architecture += [{
-            'type': 'flatten'
-        }]
+
+    if not units:
+        return architecture
+    architecture += [{
+        'type': 'flatten'
+    }]
+
+    units_final = units[-1]
+    units = units[:-1]
     for u in units:
         architecture += [{
             'type': 'fc',
             'params': {
                 'units': u,
-                'activation': tf.nn.relu
+                'activation': activation
             }
         }]
+    architecture += [{
+        'type': 'fc',
+        'params': {
+            'units': units_final,
+            'activation': final_activation
+        }
+    }]
+
+    if output_label:
+        architecture[-1]['output_label'] = output_label
 
     return architecture
 
