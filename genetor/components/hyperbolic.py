@@ -171,7 +171,7 @@ def h_exp_map(input, **params):
 
 
 def to_poincare(input, **params):
-    c = params['c']
+    c = params.get('c', 1.)
 
     output = project(c, h_exp0(c, input))
 

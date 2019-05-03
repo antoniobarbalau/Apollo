@@ -11,77 +11,59 @@ import tensorflow as tf
 import random
 
 
-WAYS = 5
-SHOTS_S = 5
-SHOTS_Q = 5
+WAYS = 2
+SHOTS_S = 1
+SHOTS_Q = 1
+IM_SHAPE = [256, 256, 3]
 
-train_filenames = glob.glob('../data/raw/mnist/train/*')
+train_dir = '../../datasets/named_logos_04_22_split/train'
+train_filenames = glob.glob(train_dir + '/**/*')
+n_classes = len(os.listdir(train_dir))
 train_dict = {
     cluster: [
         filename
         for filename in train_filenames
-        if int(os.path.basename(filename)[0]) == cluster
+        if int(os.path.basename(os.path.dirname(filename))) == cluster
     ]
-    for cluster in range(10)
+    for cluster in range(n_classes)
 }
 
 
 def extract_from_class(class_n, n_samples):
     filenames = np.random.choice(train_dict[class_n], n_samples)
     return [
-        np.expand_dims(
-            cv2.imread(filepath, cv2.IMREAD_GRAYSCALE),
-            axis = -1
-        ) /  255. #/ 0.3081 - 0.1307
+        cv2.resize(
+            cv2.imread(filepath),
+            tuple(reversed(IM_SHAPE[:-1]))
+        ) / 255.
         for filepath in filenames
     ]
 
 
-def input_feeder_proto(iteration_n, batch_size):
+def input_feeder(iteration_n, batch_size):
     output = []
     for _ in range(batch_size):
-        classes = np.random.choice(range(10), WAYS)
+        classes = np.random.choice(range(n_classes), WAYS)
         output += [
             extract_from_class(class_n, SHOTS_S + SHOTS_Q)
             for class_n in classes
         ]
-    output = np.reshape(output, [-1, 28, 28, 1])
+    output = np.reshape(output, [-1, *IM_SHAPE])
     return output
 
 
-def input_feeder(iteration_n, batch_size):
-    return [
-        np.expand_dims(
-            cv2.imread(filepath, cv2.IMREAD_GRAYSCALE),
-            axis = -1
-        ) / 255. #/ 0.3081 - 0.1307
-        for filepath in train_filenames[
-            iteration_n * batch_size: (iteration_n + 1) * batch_size
-        ]
-    ]
-
-
-def target_feeder(iteration_n, batch_size):
-    return [
-        int(os.path.basename(filepath).split('_')[0])
-        for filepath in train_filenames[
-            iteration_n * batch_size: (iteration_n + 1) * batch_size
-        ]
-    ]
-
-
+lr = 1e-3
 def lr_feeder(a, b):
-    return 1e-3 * (.5 ** (trainer.epoch_n // 20))
+    return lr
 
 
 trainer = genetor.train.Coordinator(
     ckpt_meta_path = '../trained_models/checkpoints/mnist/ckpt.meta',
     batch_size = 10,
     optimizers = ['optimizer'],
-    n_samples = 1000,
+    n_samples = 1,
     placeholders = {
-        'input:0': input_feeder_proto,
-        'target:0': target_feeder,
+        'input:0': input_feeder,
         'learning_rate:0': lr_feeder
     },
     return_values = [
@@ -89,27 +71,22 @@ trainer = genetor.train.Coordinator(
     ]
 )
 
-for _ in range(100):
+old_loss = 1.
+n_equal = 0
+for _ in range(2000):
     losses = trainer.train_epoch()
-    # print(losses)
-    print(np.mean(losses))
-    # print('ok')
-    random.shuffle(train_filenames)
     trainer.save()
-# recons = trainer.train_iteration()
-# print(recons[0].shape)
-# print(np.max(recons[0]))
-# import cv2
-# im = np.array(
-        # np.squeeze(recons[0][0], axis = -1) * 255.,
-        # dtype = np.uint8
-    # )
-# print(im)
-# cv2.imwrite(
-    # './haha.png',
-    # im
-# )
 
+    current_loss = np.mean(losses)
+    if np.abs(current_loss - old_loss) < 1e-4:
+        n_equal += 1
+    if n_equal == 10:
+        lr /= 2.
+        lr = np.min([lr, 1e-8])
+        n_equal = 0
+    old_loss = current_loss
 
+    print(current_loss)
+    print(lr)
 
 

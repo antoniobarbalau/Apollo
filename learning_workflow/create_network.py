@@ -9,7 +9,7 @@ import os
 session = tf.Session()
 
 input = tf.placeholder(
-    shape = [None, 28, 28, 1],
+    shape = [None, 256, 256, 3],
     dtype = tf.float32,
     name = 'input'
 )
@@ -29,23 +29,19 @@ architecture = [{
 }, *genetor.builder.new_architecture(
     model = 'cnn',
     structure = {
-        'filters': [128, 128],
+        'filters': [64, 64, 128, 256, 512, 1024],
         'kernels': 5,
         'activation': genetor.components.prelu,
-        'units': [256, 256]
+        'units': [1024, 1024],
+        'output_label': 'encoding'
     }
 ), {
-    'type': 'h_projection'
-}, {
-    'type': 'h_exp_map',
-    'output_label': 'encoding'
-}, {
     'type': 'h_proto_loss',
     'output_label': 'loss',
     'params': {
-        'ways': 5,
-        'shots_q': 5,
-        'shots_s': 5
+        'ways': 2,
+        'shots_q': 1,
+        'shots_s': 1
     }
 }]
 
