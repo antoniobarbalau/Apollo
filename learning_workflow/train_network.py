@@ -52,7 +52,7 @@ def input_feeder(iteration_n, batch_size):
     return output
 
 
-lr = 1e-3
+lr = 1e-5
 def lr_feeder(a, b):
     return lr
 
@@ -82,7 +82,7 @@ for _ in range(2000):
         n_equal += 1
     if n_equal == 10:
         lr /= 2.
-        lr = np.min([lr, 1e-8])
+        lr = np.max([lr, 1e-8])
         n_equal = 0
     old_loss = current_loss
 

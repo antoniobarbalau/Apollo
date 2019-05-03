@@ -36,7 +36,7 @@ architecture = [{
         'output_label': 'encoding'
     }
 ), {
-    'type': 'h_proto_loss',
+    'type': 'proto_loss',
     'output_label': 'loss',
     'params': {
         'ways': 2,
