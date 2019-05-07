@@ -2,7 +2,7 @@ import tensorflow as tf
 from .basic import to_tensor
 
 
-def upsampling(input, **params):
+def conv2d_transpose(input, **params):
     output = tf.layers.conv2d_transpose(input, **params)
     return output
 
