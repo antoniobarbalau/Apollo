@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from .initializations import *
 from .capsules import safe_norm
+from .basic import to_tensor
 
 
 def h_lambda(c, x):
@@ -328,3 +329,23 @@ def h_proto_loss(input, **params):
 
     return output
 
+
+def h_siamese_margin_loss(input, **params):
+    target = to_tensor(params['target'])
+
+    encoding_size = input.shape[-1].value
+    x1, x2 = tf.unstack(tf.reshape(input, [-1, 2, encoding_size]), 2, 1)
+
+    energy = h_distance(x1, x2)
+    energy = tf.expand_dims(energy, axis = -1)
+    energy = 2. * (tf.nn.sigmoid(energy) - .5)
+    energy = tf.reshape(energy, [-1])
+
+    m_1 = 0.3
+    m_2 = 0.7
+    loss = (target * tf.maximum(energy - m_1, 0.) +
+            (1. - target) * tf.maximum(m_2 - energy, 0.))
+    loss = tf.reduce_mean(loss,
+                          name = 'output')
+
+    return loss
