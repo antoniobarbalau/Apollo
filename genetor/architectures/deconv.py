@@ -13,8 +13,9 @@ def generate_architecture(structure):
             'type': deconv_type,
             'params': {
                 'filters': f,
-                'stride': s,
-                'kernel_size': k
+                'strides': (s, s),
+                'kernel_size': k,
+                'padding': 'same'
             }
         }]
 
