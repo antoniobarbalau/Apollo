@@ -241,3 +241,43 @@ def proto_loss(input, **params):
 
     return output
 
+
+def few_shot_loss(input, **params):
+    with tf.variable_scope(params['name']):
+        ways = params.get('ways', 5)
+        enc_size = input.shape[-1].value
+
+        samples = tf.reshape(input, [-1, ways + 1, enc_size])
+        query = samples[:, 0, :]
+        support = samples[:, 1:, :]
+
+        query = tf.expand_dims(query, axis = 1)
+        query = tf.tile(query, [1, ways, 1])
+
+        distances = tf.reduce_sum(
+            tf.square(query - support),
+            axis = -1
+        )
+        predicted_classes = tf.argmin(
+            distances,
+            axis = -1,
+            name = 'predicted_classes'
+        )
+
+        correct_predictions = tf.cast(
+            tf.equal(predicted_classes, 0),
+            tf.float32,
+            name = 'correct_predictions'
+        )
+        accuracy_sum = tf.reduce_sum(
+            correct_predictions,
+            name = 'accuracy_sum'
+        )
+        accuracy_mean = tf.reduce_mean(
+            correct_predictions,
+            name = 'accuracy_mean'
+        )
+
+
+    return accuracy_sum
+
