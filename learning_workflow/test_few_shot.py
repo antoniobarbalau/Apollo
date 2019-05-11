@@ -14,7 +14,7 @@ import tensorflow as tf
 
 
 WAYS = 5
-n_tests = 1000
+n_tests = 10000
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
@@ -82,6 +82,6 @@ trainer = genetor.train.Coordinator(
 )
 
 accs = trainer.train_epoch()
-print(np.sum(accs) / 1000.)
+print(np.mean(accs))
 
 
