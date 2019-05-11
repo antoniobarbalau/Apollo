@@ -46,8 +46,6 @@ def generate_architecture(structure):
         'type': 'flatten'
     }]
 
-    units_final = units[-1]
-    units = units[:-1]
     for u in units:
         architecture += [{
             'type': 'fc',
@@ -56,13 +54,7 @@ def generate_architecture(structure):
                 'activation': activation
             }
         }]
-    architecture += [{
-        'type': 'fc',
-        'params': {
-            'units': units_final,
-            'activation': final_activation
-        }
-    }]
+    architecture[-1]['activation'] = final_activation
 
     if output_label:
         architecture[-1]['output_label'] = output_label
