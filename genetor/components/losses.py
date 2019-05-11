@@ -19,6 +19,21 @@ def l2_loss(input, **params):
     return output
 
 
+def sigmoid_cross_entropy(input, **params):
+    target = to_tensor(params['target'])
+    
+    with tf.variable_scope(params['name']):
+        reconstruction = tf.nn.sigmoid(input, name = 'reconstruction')
+
+        output = tf.nn.sigmoid_cross_entropy_with_logits(
+            labels = target, logits = input
+        )
+
+        output = tf.reduce_mean(loss, name = 'output')
+
+    return output
+
+
 def cross_entropy(input, **params):
     with tf.variable_scope(params['name']):
         target = to_tensor(params['target'])

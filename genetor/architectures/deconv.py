@@ -6,6 +6,7 @@ def generate_architecture(structure):
     strides = structure['strides']
     kernels = structure['kernels']
     deconv_type = structure['type']
+    final_activation = structure.get('final_activation', None)
 
     architecture = []
     for f, s, k in zip(filters, strides, kernels):
@@ -15,9 +16,11 @@ def generate_architecture(structure):
                 'filters': f,
                 'strides': (s, s),
                 'kernel_size': k,
-                'padding': 'same'
+                'padding': 'same',
+                'activation': tf.nn.relu
             }
         }]
+    architecture[-1]['activation'] = final_activation
 
     return architecture
 
