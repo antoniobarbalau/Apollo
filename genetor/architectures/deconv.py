@@ -1,4 +1,5 @@
 from .. import components
+import tensorflow as tf
 
 
 def generate_architecture(structure):

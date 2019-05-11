@@ -29,7 +29,7 @@ def sigmoid_cross_entropy(input, **params):
             labels = target, logits = input
         )
 
-        output = tf.reduce_mean(loss, name = 'output')
+        output = tf.reduce_mean(output, name = 'output')
 
     return output
 
