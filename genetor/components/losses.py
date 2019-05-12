@@ -170,7 +170,8 @@ def siamese_contrastive_loss(input, **params):
 
         energy = tf.reduce_sum(
             tf.square(tf.subtract(x1, x2)),
-            axis = -1
+            axis = -1,
+            keepdims = True
         )
 
         loss = tf.reduce_mean(
@@ -183,23 +184,26 @@ def siamese_contrastive_loss(input, **params):
 
 
 def siamese_margin_loss(input, **params):
-    target = to_tensor(params['target'])
+    with tf.variable_scope(params['name']):
+        target = to_tensor(params['target'])
 
-    encoding_size = input.shape[-1].value
-    x1, x2 = tf.unstack(tf.reshape(input, [-1, 2, encoding_size]), 2, 1)
+        encoding_size = input.shape[-1].value
+        x1, x2 = tf.unstack(tf.reshape(input, [-1, 2, encoding_size]), 2, 1)
 
-    energy = tf.reduce_sum(tf.abs(tf.subtract(x1, x2)),
-                           axis = -1,
-                           keepdims = True)
-    energy = 2. * (tf.nn.sigmoid(energy) - .5)
-    energy = tf.reshape(energy, [-1])
+        energy = tf.reduce_sum(
+            tf.abs(tf.subtract(x1, x2)),
+            axis = -1,
+            keepdims = True
+        )
+        energy = 2. * (tf.nn.sigmoid(energy) - .5)
+        energy = tf.reshape(energy, [-1], name = 'energy')
 
-    m_1 = 0.3
-    m_2 = 0.7
-    loss = (target * tf.maximum(energy - m_1, 0.) +
-            (1. - target) * tf.maximum(m_2 - energy, 0.))
-    loss = tf.reduce_mean(loss,
-                          name = 'output')
+        m_1 = 0.3
+        m_2 = 0.7
+        loss = (target * tf.maximum(energy - m_1, 0.) +
+                (1. - target) * tf.maximum(m_2 - energy, 0.))
+        loss = tf.reduce_mean(loss,
+                              name = 'output')
 
     return loss
 
