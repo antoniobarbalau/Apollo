@@ -21,7 +21,7 @@ def generate_architecture(structure):
                 'activation': tf.nn.relu
             }
         }]
-    architecture[-1]['activation'] = final_activation
+    architecture[-1]['params']['activation'] = final_activation
 
     return architecture
 

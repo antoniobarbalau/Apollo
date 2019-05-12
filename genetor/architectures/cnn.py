@@ -54,7 +54,7 @@ def generate_architecture(structure):
                 'activation': activation
             }
         }]
-    architecture[-1]['activation'] = final_activation
+    architecture[-1]['params']['activation'] = final_activation
 
     if output_label:
         architecture[-1]['output_label'] = output_label
