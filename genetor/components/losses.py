@@ -161,24 +161,22 @@ def contrastive_center_loss(input, **params):
 
 def siamese_contrastive_loss(input, **params):
     with tf.variable_scope(params['name']):
-        m = params.get('m', .7)
+        m = params.get('m', 0.3)
         target = to_tensor(params['target'])
 
         encoding_size = input.shape[-1].value
 
         x1, x2 = tf.unstack(tf.reshape(input, [-1, 2, encoding_size]), 2, 1)
 
-        energy = tf.sqrt(tf.reduce_sum(
+        energy = tf.reduce_sum(
             tf.square(tf.subtract(x1, x2)),
             axis = -1,
             keepdims = True
-        ))
-        energy = 2. * (tf.nn.sigmoid(energy) - .5)
-        energy = tf.reshape(energy, [-1], name = 'energy')
+        )
 
         loss = tf.reduce_mean(
-            target * .5 * tf.square(energy) +
-            (1. - target) * .5 * tf.square(tf.maximum(0., m - energy)),
+            target * .5 * energy +
+            (1. - target) * .5 * tf.square(tf.maximum(0., m - tf.sqrt(energy))),
             name = 'output'
         )
 
@@ -223,6 +221,7 @@ def proto_loss(input, **params):
     q = samples[:, :, shots_s:, :]
 
     c = tf.reduce_mean(s, axis = -2)
+    # print(c.shape)
     c_tiled = tf.expand_dims(c, axis = 2)
     c_tiled = tf.tile(c_tiled, [1, 1, shots_q, 1])
 
@@ -230,38 +229,68 @@ def proto_loss(input, **params):
 
     loss_intra = tf.reduce_mean(intra_cluster)
 
-
-    c = tf.tile(c, [1, shots_q, 1])
-    c = tf.reshape(c, [-1, ways, shots_q, enc_size])
     c = tf.expand_dims(c, axis = -2)
-    c = tf.tile(c, [1, 1, 1, ways, 1])
+    # print(c.shape)
+    c = tf.tile(c, [1, 1, shots_q, 1])
+    # print(c.shape)
+    # c = tf.reshape(c, [-1])
+    # c = tf.reshape(c, [1, ways, shots_q, enc_size])
+    c = tf.expand_dims(c, axis = 1)
+    c = tf.tile(c, [1, ways, 1, 1, 1])
+    # c = tf.reshape(c, [-1, ways, ways, shots_q, enc_size])
+    # c = tf.reshape(c, [-1])
+    # c = tf.transpose(c, [0, 3, 1, 2, 4])
+    # c = tf.transpose(c, [0, 2, 1, 3])
+    # print(c)
 
-    q = tf.expand_dims(q, axis = -2)
-    q = tf.tile(q, [1, 1, 1, ways, 1])
+    # print(q)
+    q = tf.expand_dims(q, axis = 2)
+    q = tf.tile(q, [1, 1, ways, 1, 1])
+    # q = tf.reshape(q, [-1, ways, shots_q, ways, enc_size])
+    # q = tf.reshape(q, [-1])
+    # q = tf.reshape(q, [-1, ways, ways, shots_q, enc_size])
+    # print(q[:, 1, 1, :, :])
+    # print(q)
 
-    target = np.arange(ways)
-    target = np.expand_dims(target, axis = -1)
-    target = np.tile(target, [1, shots_q])
-    target = np.ravel(target)
-    target = tf.constant(target)
+    # print(loss_inter)
 
-    target = tf.one_hot(target, depth = ways)
-    target = tf.reshape(target, [ways, shots_q, ways])
+
+    target = np.zeros([1, ways, ways, shots_q])
+    for i in range(ways):
+        target[:, i, i, :] = 1.
+    target = tf.constant(target, dtype = tf.float32)
+    # target = np.arange(J
+    # target = np.expand_dims(target, axis = -1)
+    # target = np.tile(target, [shots_q, 1])
+    # target = np.ravel(target)
+    # target = tf.constant(target)
+
+    # print(target.shape)
+    # target = tf.one_hot(target, depth = ways)
+    # target = tf.reshape(target, [ways, ways, shots_q])
     batch_size = tf.shape(c)[0]
-    target = tf.expand_dims(target, axis = 0)
+    # target = tf.expand_dims(target, axis = 0)
     target = tf.tile(target, [batch_size, 1, 1, 1])
-    target = 1. - target
+    # target = 1. - target
+    # target = tf.expand_dims(target, axis = -1)
+    # print(target.shape)
+    # print(loss_inter.shape)
 
-    loss_inter = tf.reduce_sum(tf.square(c - q), axis = -1)
-    loss_inter = -1. * loss_inter * target
-    loss_inter = tf.exp(loss_inter)
-    loss_inter = tf.log(tf.reduce_sum(loss_inter))
-
-
-    output = tf.add(
-        loss_intra, loss_inter,
-        name = 'output'
+    loss_inter = tf.sqrt(
+        tf.reduce_sum(tf.square(c - q), axis = -1) + 1e-6
     )
+    loss_inter = loss_inter * target
+    loss_inter = tf.reduce_sum(loss_inter)
+    # loss_inter = tf.reshape(loss_inter, [-1, 1])
+    # loss_inter = (tf.nn.sigmoid(loss_inter) - .5) * 2
+    # m = 0.7
+    # loss_inter = tf.square(tf.maximum(0., m - loss_inter))
+    # loss_inter = tf.reduce_mean(loss_inter)
+    # loss_inter = tf.exp(loss_inter)
+    # loss_inter = tf.log(tf.reduce_sum(loss_inter))
+
+
+    output = loss_intra / loss_inter
 
     return output
 
