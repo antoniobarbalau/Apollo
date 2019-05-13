@@ -161,22 +161,24 @@ def contrastive_center_loss(input, **params):
 
 def siamese_contrastive_loss(input, **params):
     with tf.variable_scope(params['name']):
-        m = params.get('m', 0.3)
+        m = params.get('m', .7)
         target = to_tensor(params['target'])
 
         encoding_size = input.shape[-1].value
 
         x1, x2 = tf.unstack(tf.reshape(input, [-1, 2, encoding_size]), 2, 1)
 
-        energy = tf.reduce_sum(
+        energy = tf.sqrt(tf.reduce_sum(
             tf.square(tf.subtract(x1, x2)),
             axis = -1,
             keepdims = True
-        )
+        ))
+        energy = 2. * (tf.nn.sigmoid(energy) - .5)
+        energy = tf.reshape(energy, [-1], name = 'energy')
 
         loss = tf.reduce_mean(
-            target * .5 * energy +
-            (1. - target) * .5 * tf.square(tf.maximum(0., m - tf.sqrt(energy))),
+            target * .5 * tf.square(energy) +
+            (1. - target) * .5 * tf.square(tf.maximum(0., m - energy)),
             name = 'output'
         )
 
