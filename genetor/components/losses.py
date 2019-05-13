@@ -285,8 +285,8 @@ def proto_loss(input, **params):
     # loss_inter = (tf.nn.sigmoid(loss_inter) - .5) * 2
     # m = 0.7
     # loss_inter = tf.square(tf.maximum(0., m - loss_inter))
-    # loss_inter = tf.reduce_mean(loss_inter)
-    # loss_inter = tf.exp(loss_inter)
+    # loss_inter = tf.reduce_mean(-loss_inter)
+    # loss_inter = tf.exp(-loss_inter)
     # loss_inter = tf.log(tf.reduce_sum(loss_inter))
 
 
