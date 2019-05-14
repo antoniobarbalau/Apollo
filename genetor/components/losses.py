@@ -259,6 +259,7 @@ def proto_loss(input, **params):
     for i in range(ways):
         target[:, i, i, :] = 1.
     target = tf.constant(target, dtype = tf.float32)
+    target = 1. - target
     # target = np.arange(J
     # target = np.expand_dims(target, axis = -1)
     # target = np.tile(target, [shots_q, 1])
