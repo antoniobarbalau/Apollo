@@ -281,17 +281,17 @@ def proto_loss(input, **params):
         tf.reduce_sum(tf.square(c - q), axis = -1) + 1e-6
     )
     loss_inter = loss_inter * target
-    loss_inter = tf.reduce_sum(loss_inter)
+    # loss_inter = tf.reduce_sum(loss_inter)
     # loss_inter = tf.reshape(loss_inter, [-1, 1])
     # loss_inter = (tf.nn.sigmoid(loss_inter) - .5) * 2
     # m = 0.7
     # loss_inter = tf.square(tf.maximum(0., m - loss_inter))
     # loss_inter = tf.reduce_mean(-loss_inter)
-    # loss_inter = tf.exp(-loss_inter)
-    # loss_inter = tf.log(tf.reduce_sum(loss_inter))
+    loss_inter = tf.exp(-loss_inter)
+    loss_inter = tf.log(tf.reduce_sum(loss_inter))
 
 
-    output = loss_intra / loss_inter
+    output = loss_intra + loss_inter
 
     return output
 
