@@ -156,6 +156,15 @@ class Coordinator(object):
         self.saver.save(self.session, self.ckpt_meta_path.replace('.meta', ''))
 
 
+    def run_iteration_without_optimizer(self):
+        optimizers = self.optimizers
+        self.optimizers = []
+        output = self.train_iteration()
+        self.optimizers = optimizers
+
+        return output
+
+
     def create_summary(self):
         for tensor_name in self.summary.get('scalars', []):
             tf.summary.scalar(tensor_name, self.tensors[tensor_name])
