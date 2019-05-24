@@ -51,10 +51,12 @@ def generate_architecture(structure):
             'type': 'fc',
             'params': {
                 'units': u,
-                'activation': activation
+                'activation': activation,
+                **conv_params
             }
         }]
     architecture[-1]['params']['activation'] = final_activation
+    architecture[-1]['params']['batch_norm_is_training'] = None
 
     if output_label:
         architecture[-1]['output_label'] = output_label

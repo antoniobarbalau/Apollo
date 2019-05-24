@@ -60,6 +60,7 @@ def fc(input, **params):
         n_inputs = input.shape[-1].value
         n_outputs = params['units']
         initialization = params['initialization']
+        batch_norm_is_training = params.get('batch_norm_is_training', None)
 
         kernel = tf.Variable(
             initial_value = initialization(shape = [n_inputs, n_outputs]),
@@ -75,6 +76,12 @@ def fc(input, **params):
                                    name = 'weighted_input')
         output_raw = tf.add(weighted_input, bias,
                             name = 'output_raw')
+
+        if batch_norm_is_training is not None:
+            output_raw = tf.contrib.layers.batch_norm(
+                output_raw,
+                is_training = batch_norm_is_training
+            )
 
         activation = params.get('activation', None)
         if activation is None:
