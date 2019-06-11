@@ -9,7 +9,7 @@ import os
 session = tf.Session()
 
 input = tf.placeholder(
-    shape = [None, 256, 256, 3],
+    shape = [None, 28, 28, 1],
     dtype = tf.float32,
     name = 'input'
 )
@@ -18,37 +18,45 @@ target = tf.placeholder(
     dtype = tf.int64,
     name = 'target'
 )
-learning_rate = tf.placeholder(
+margin = tf.placeholder(
     shape = [],
     dtype = tf.float32,
-    name = 'learning_rate'
+    name = 'margin'
 )
 architecture = [{
     'type': 'input',
     'input': input,
-}, *genetor.builder.new_architecture(
-    model = 'cnn',
-    structure = {
-        'filters': [64, 64, 128, 256, 512, 1024],
-        'kernels': 5,
-        'activation': genetor.components.prelu,
-        'units': [1024, 1024],
-        'output_label': 'encoding'
+}, {
+    'type': 'conv',
+    'params': {
+        'kernel_size': 5,
+        'filters': 32,
+        'stride': 2
     }
-), {
-    'type': 'proto_loss',
+}, {
+    'type': 'conv_caps_primary'
+}, {
+    'type': 'conv_caps'
+}, {
+    'type': 'conv_caps',
+    'params': {
+        'stride': 1
+    }
+}, {
+    'type': 'class_capsules'
+}, {
+    'type': 'spread_loss',
     'output_label': 'loss',
     'params': {
-        'ways': 2,
-        'shots_q': 1,
-        'shots_s': 1
+        'target': target,
+        'margin': margin
     }
 }]
 
 loss = genetor.builder.new_graph(architecture = architecture)
 
 optimizer = tf.train.AdamOptimizer(
-    learning_rate = learning_rate
+    # learning_rate = 1e-4
 ).minimize(loss, name = 'optimizer')
 
 saver = tf.train.Saver()
