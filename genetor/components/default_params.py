@@ -1,9 +1,9 @@
-from . import components
 import tensorflow as tf
+from .initializations import default_initialization
 
 DEFAULT_PARAMS = {
     'resize_up_conv': {
-        'initialization': components.default_initialization,
+        'initialization': default_initialization,
         'filters': 32,
         'kernel_size': 3,
         'stride': 1,
@@ -11,7 +11,7 @@ DEFAULT_PARAMS = {
         'activation': tf.nn.relu
     },
     'up_conv': {
-        'initialization': components.default_initialization,
+        'initialization': default_initialization,
         'filters': 32,
         'kernel_size': 3,
         'stride': 1,
@@ -19,7 +19,7 @@ DEFAULT_PARAMS = {
         'activation': tf.nn.relu
     },
     'conv': {
-        'initialization': components.default_initialization,
+        'initialization': default_initialization,
         'filters': 32,
         'kernel_size': 3,
         'stride': 1,
@@ -27,7 +27,7 @@ DEFAULT_PARAMS = {
         'activation': tf.nn.relu
     },
     'dilated_conv': {
-        'initialization': components.default_initialization,
+        'initialization': default_initialization,
         'filters': 32,
         'kernel_size': 3,
         'rate': 2,
@@ -49,7 +49,7 @@ DEFAULT_PARAMS = {
         'padding': 'SAME'
     },
     'fc': {
-        'initialization': components.default_initialization,
+        'initialization': default_initialization,
         'units': 512,
         'activation': tf.nn.relu
     },

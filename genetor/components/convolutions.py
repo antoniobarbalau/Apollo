@@ -1,5 +1,4 @@
 from .basic import to_tensor
-from .components import default_initialization
 from .initializations import default_initialization
 import tensorflow as tf
 

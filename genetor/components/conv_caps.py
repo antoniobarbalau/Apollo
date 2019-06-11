@@ -83,7 +83,7 @@ def conv_caps(input, **params):
       with tf.variable_scope('votes') as scope:
           
           # Generate the votes by multiply it with the transformation matrices
-          votes = mat_transform(inputs_poses, o_size, size=batch_size*spatial_size*spatial_size)  # (864, 288, 32, 16)
+          votes = mat_transform(inputs_poses, o_size, batch_size*spatial_size*spatial_size)  # (864, 288, 32, 16)
           
           # Reshape the vote for EM routing
           votes_shape = votes.get_shape()
@@ -166,28 +166,28 @@ def kernel_tile(input, kernel_size, stride):
     return output
 
 
-def mat_transform(input, output_cap_size, size):
-    """Compute the vote.
+def mat_transform(input, n_output_caps, n_caps_tuples):
+    n_input_caps = input.shape[1].value
 
-    :param inputs: shape (size, 288, 16)
-    :param output_cap_size: 32
+    input = tf.reshape(
+        input,
+        [-1, n_input_caps, 1, 4, 4]
+    )
+    input = tf.tile(input, [1, 1, n_output_caps, 1, 1])
 
-    :return votes: (24, 5, 5, 3x3=9, 136)
-    """
+    w = tf.Variable(
+        initial_value = tf.truncated_normal(
+            mean = 0.,
+            stddev = 1.,
+            shape = [1, n_input_caps, n_output_caps, 4, 4]
+        ),
+        dtype = tf.float32
+    )
+    w = tf.tile(w, [n_caps_tuples, 1, 1, 1, 1])
+    output = tf.matmul(input, w)
+    output = tf.reshape(output, [-1, n_input_caps, n_output_caps, 16])
 
-    caps_num_i = int(input.get_shape()[1]) # 288
-    output = tf.reshape(input, shape=[size, caps_num_i, 1, 4, 4]) # (size, 288, 1, 4, 4)
-
-    w = slim.variable('w', shape=[1, caps_num_i, output_cap_size, 4, 4], dtype=tf.float32,
-                      initializer=tf.truncated_normal_initializer(mean=0.0, stddev=1.0)) # (1, 288, 32, 4, 4)
-    w = tf.tile(w, [size, 1, 1, 1, 1])  # (24, 288, 32, 4, 4)
-
-    output = tf.tile(output, [1, 1, output_cap_size, 1, 1]) # (size, 288, 32, 4, 4)
-
-    votes = tf.matmul(output, w) # (24, 288, 32, 4, 4)
-    votes = tf.reshape(votes, [size, caps_num_i, output_cap_size, 16]) # (size, 288, 32, 16)
-
-    return votes
+    return output
 
 
 def matrix_capsules_em_routing(votes, i_activations, beta_v, beta_a, iterations, name):
@@ -367,7 +367,7 @@ def class_capsules(input, **params):
         with tf.variable_scope('votes') as scope:
             # inputs_poses (384, 32, 16)
             # votes: (384, 32, 10, 16)
-            votes = mat_transform(inputs_poses, num_classes, size=batch_size*spatial_size*spatial_size)
+            votes = mat_transform(inputs_poses, num_classes, batch_size*spatial_size*spatial_size)
             # tf.logging.info(f"{name} votes shape: {votes.get_shape()}")
 
             # votes (24, 4, 4, 32, 10, 16)
