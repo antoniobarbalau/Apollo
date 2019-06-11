@@ -4,68 +4,50 @@ from .initializations import default_initialization
 import numpy as np
 import tensorflow.contrib.slim as slim
 from tensorflow.contrib.layers.python.layers import initializers
+from .convolutions import conv
 
 
 epsilon = 1e-7
 
 
 def conv_caps_primary(input, **params):
-# (inputs, kernel_size, out_capsules, stride, padding, pose_shape, name):
-    # kernel_size = params.get('kernel_size', 1) # din cauza reshape
     kernel_size = 1
-    out_capsules = params.get('out_capsules', 32)
-    # stride = params.get('stride', 1)
-    stride = 1 # din cauza poses, reshape
-    padding = params.get('padding', 'VALID')
+    stride = 1
+    n_capsules = params.get('n_capsules', 32)
     pose_shape = params.get('pose_shape', [4, 4])
-    """This constructs a primary capsule layer using regular convolution layer.
-
-    :param inputs: shape (N, H, W, C) (?, 14, 14, 32)
-    :param kernel_size: Apply a filter of [kernel, kernel] [5x5]
-    :param out_capsules: # of output capsule (32)
-    :param stride: 1, 2, or ... (1)
-    :param padding: padding: SAME or VALID.
-    :param pose_shape: (4, 4)
-    :param name: scope name
-
-    :return: (poses, activations), (poses (?, 14, 14, 32, 4, 4), activations (?, 14, 14, 32))
-    """
+    padding = params.get('padding', 'VALID')
 
     with tf.variable_scope(params['name']) as scope:
-        # Generate the poses matrics for the 32 output capsules
-        poses = tf.layers.conv2d(
+        poses = conv(
             input,
-            filters = out_capsules * pose_shape[0] * pose_shape[1],
+            filters = n_capsules * pose_shape[0] * pose_shape[1],
             kernel_size = kernel_size,
-            strides = stride,
+            stride = stride,
             padding = padding,
-            activation = tf.nn.relu
+            activation = tf.nn.relu,
+            name = 'poses_conv'
         )
-
-
-        input_shape = input.get_shape()
-
-        # Reshape 16 scalar values into a 4x4 matrix
         poses = tf.reshape(
-            poses, shape=[-1, input_shape[-3], input_shape[-2], out_capsules, pose_shape[0], pose_shape[1]],
-            name='poses'
+            poses,
+            [
+                -1,
+                input.shape[1].value, input.shape[2].value,
+                n_capsules, pose_shape[0], pose_shape[1]
+            ],
+            name = 'poses'
         )
 
-        # Generate the activation for the 32 output capsules
-        activations = tf.layers.conv2d(
+        activations = conv(
             input,
-            filters = out_capsules,
+            filters = n_capsules,
             kernel_size = kernel_size,
-            strides = stride,
+            stride = stride,
             padding = padding,
-            activation = tf.nn.relu
+            activation = tf.nn.relu,
+            name = 'activations_conv'
         )
+        activations = tf.identity(activations, name = 'activations')
 
-        tf.summary.histogram(
-            'activations', activations
-        )
-
-    # poses (?, 14, 14, 32, 4, 4), activations (?, 14, 14, 32)
     return poses, activations
 
 
@@ -142,41 +124,45 @@ def conv_caps(input, **params):
       return poses, activations
 
 
-def kernel_tile(input, kernel, stride):
-    """This constructs a primary capsule layer using regular convolution layer.
+def kernel_tile(input, kernel_size, stride):
+    input = tf.reshape(
+        input,
+        [
+            -1,
+            input.shape[1].value, input.shape[2].value,
+            np.prod(input.shape[3:])
+        ]
+    )
 
-    :param inputs: shape (?, 14, 14, 32, 4, 4)
-    :param kernel: 3
-    :param stride: 2
+    tile_kernel = np.zeros(
+        [
+            kernel_size, kernel_size,
+            input.shape[3].value,
+            kernel_size * kernel_size
+        ],
+        dtype = np.float32
+    )
+    for i in range(kernel_size):
+        for j in range(kernel_size):
+            tile_kernel[i, j, :, i * kernel_size + j] = 1.
+    tile_kernel = tf.constant(tile_kernel, dtype = tf.float32)
 
-    :return output: (50, 5, 5, 3x3=9, 136)
-    """
+    output = tf.nn.depthwise_conv2d(
+        input,
+        tile_kernel,
+        strides = [1, stride, stride, 1],
+        padding = 'VALID'
+    )
+    output = tf.reshape(
+        output,
+        shape = [
+            -1,
+            output.shape[1].value, output.shape[2].value,
+            input.shape[3].value, kernel_size * kernel_size
+        ]
+    )
+    output = tf.transpose(output, [0, 1, 2, 4, 3])
 
-    # (?, 14, 14, 32x(16)=512)
-    input_shape = input.get_shape()
-    size = input_shape[4]*input_shape[5] if len(input_shape)>5 else 1
-    input = tf.reshape(input, shape=[-1, input_shape[1], input_shape[2], input_shape[3]*size])
-
-
-    input_shape = input.get_shape()
-    tile_filter = np.zeros(shape=[kernel, kernel, input_shape[3],
-                                  kernel * kernel], dtype=np.float32)
-    for i in range(kernel):
-        for j in range(kernel):
-            tile_filter[i, j, :, i * kernel + j] = 1.0 # (3, 3, 512, 9)
-
-    # (3, 3, 512, 9)
-    tile_filter_op = tf.constant(tile_filter, dtype=tf.float32)
-
-    # (?, 6, 6, 4608)
-    output = tf.nn.depthwise_conv2d(input, tile_filter_op, strides=[
-                                    1, stride, stride, 1], padding='VALID')
-
-    output_shape = output.get_shape()
-    output = tf.reshape(output, shape=[-1, output_shape[1], output_shape[2], input_shape[3], kernel * kernel])
-    output = tf.transpose(output, perm=[0, 1, 2, 4, 3])
-
-    # (?, 6, 6, 9, 512)
     return output
 
 
