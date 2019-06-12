@@ -1,8 +1,9 @@
 import math
+import numpy as np
 import os
 import shutil
 import tensorflow as tf
-import numpy as np
+import time
 
 class Coordinator(object):
 
@@ -101,12 +102,31 @@ class Coordinator(object):
         return results[:len(return_values)]
 
     def train_epoch(self):
+
+        def format_seconds(s):
+            h = s // 3600
+            s = s % 3600
+            m = s // 60
+            s = s % 60
+            return f'{h}:{m}:{s}         '
+
         self.epoch_n += 1
         self.iteration_n = -1
 
         return_values = []
 
-        for _ in range(self.n_iterations):
+        iteration_start_time = time.time()
+        return_values.append(self.train_iteration())
+        iteration_end_time = time.time()
+        iteration_duration = iteration_end_time - iteration_start_time
+
+        for iteration_n in range(1, self.n_iterations):
+            remaining_time = (self.n_iterations - self.iteration_n) * iteration_duration
+            print(
+                f'{np.round(iteration_n / self.n_iterations, 2)} -- ' +
+                f'{format_seconds(remaining_time)}',
+                end = '\r'
+            )
             return_values.append(self.train_iteration())
 
         # if self.validation:

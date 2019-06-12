@@ -349,7 +349,7 @@ def class_capsules(input, **params):
     :param name:
     :return poses, activations: poses (24, 10, 4, 4), activation (24, 10).
     """
-    num_classes = 10
+    num_classes = params['n_classes']
     iterations = 3
     batch_size = 10
 
@@ -418,7 +418,7 @@ def spread_loss(input, **params):
     with tf.variable_scope(params['name']):
         poses = tf.identity(poses, name = 'poses')
         activations = tf.identity(activations, name = 'activations')
-        target_one_hot = tf.one_hot(target, depth = 10)
+        target_one_hot = tf.one_hot(target, depth = activations.shape[-1])
 
         predicted_classes = tf.argmax(
             activations, axis = -1,
@@ -439,7 +439,7 @@ def spread_loss(input, **params):
         )
 
         loss = (
-            tf.reduce_sum(activations * target_one_hot, axis = - 1) -
+            tf.reduce_sum(activations * target_one_hot, axis = - 1, keep_dims = True) -
             activations
         )
         loss = loss * (1. - target_one_hot)
