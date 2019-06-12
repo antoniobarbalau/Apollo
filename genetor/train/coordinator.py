@@ -104,6 +104,7 @@ class Coordinator(object):
     def train_epoch(self):
 
         def format_seconds(s):
+            s = int(s)
             h = s // 3600
             s = s % 3600
             m = s // 60
@@ -121,13 +122,16 @@ class Coordinator(object):
         iteration_duration = iteration_end_time - iteration_start_time
 
         for iteration_n in range(1, self.n_iterations):
-            remaining_time = (self.n_iterations - self.iteration_n) * iteration_duration
+            remaining_time = (self.n_iterations - iteration_n) * iteration_duration
             print(
                 f'{np.round(iteration_n / self.n_iterations, 2)} -- ' +
                 f'{format_seconds(remaining_time)}',
                 end = '\r'
             )
+            iteration_start_time = time.time()
             return_values.append(self.train_iteration())
+            iteration_end_time = time.time()
+            iteration_duration = iteration_end_time - iteration_start_time
 
         # if self.validation:
         #     if self.epoch_n % self.validation['every'] == 0:

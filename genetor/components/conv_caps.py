@@ -60,6 +60,7 @@ def conv_caps(input, **params):
   iterations = 2
   batch_size = 10
   inputs_poses, inputs_activations = input
+  # batch_size = tf.shape(inputs_poses)[0]
 
   with tf.variable_scope(params['name']) as scope:
 
