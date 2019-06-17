@@ -13,7 +13,7 @@ import random
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
-train_filepaths = glob.glob('../data/raw/fer/train/*')
+train_filepaths = glob.glob('../data/raw/fer/test/*')
 epoch_n = 0
 margin_vect = np.concatenate([
     np.ones(1) * .2,
@@ -104,9 +104,7 @@ def input_feeder(iteration_n, batch_size):
     output = [
         np.expand_dims(
             normalize(
-                augment(
-                    cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
-                )
+                cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
             ),
             axis = -1
         )
@@ -140,31 +138,21 @@ def learning_rate_feeder(a, b):
 trainer = genetor.train.Coordinator(
     ckpt_meta_path = '../trained_models/checkpoints/mnist/ckpt.meta',
     batch_size = 10,
-    optimizers = ['optimizer'],
+    optimizers = [],
     n_samples = len(train_filepaths),
     placeholders = {
         'input:0': input_feeder,
         'target:0': target_feeder,
-        'margin:0': margin_feeder,
-        'learning_rate:0': learning_rate_feeder,
-        'batch_norm_is_training:0': lambda a, b: True
+        # 'margin:0': margin_feeder,
+        # 'learning_rate:0': learning_rate_feeder,
+        'batch_norm_is_training:0': lambda a, b: False
     },
     return_values = [
         'cross_entropy_0/accuracy_sum:0'
     ]
 )
 
-for e in range(40, 50):
-    epoch_n = e
-    margin = margin_vect[epoch_n]
-    learning_rate = learning_rate_vect[epoch_n]
-
-    np.random.shuffle(train_filepaths)
-    losses = trainer.train_epoch()
-
-    trainer.save()
-    print(
-        f'Epoch {epoch_n}: ' +
-        f'{np.round(np.sum(losses) / len(train_filepaths), 2)}'
-    )
+margin = 0
+losses = trainer.train_epoch()
+print(np.round(np.sum(losses) / len(train_filepaths), 5))
 

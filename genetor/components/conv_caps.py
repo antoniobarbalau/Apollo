@@ -11,8 +11,6 @@ epsilon = 1e-7
 
 
 def conv_caps_primary(input, **params):
-    kernel_size = 1
-    stride = 1
     n_capsules = params.get('n_capsules', 32)
     pose_shape = params.get('pose_shape', [4, 4])
     padding = params.get('padding', 'VALID')
@@ -21,10 +19,10 @@ def conv_caps_primary(input, **params):
         poses = conv(
             input,
             filters = n_capsules * pose_shape[0] * pose_shape[1],
-            kernel_size = kernel_size,
-            stride = stride,
+            kernel_size = 1,
+            stride = 1,
             padding = padding,
-            activation = tf.nn.relu,
+            activation = None,
             name = 'poses_conv'
         )
         poses = tf.reshape(
@@ -40,10 +38,10 @@ def conv_caps_primary(input, **params):
         activations = conv(
             input,
             filters = n_capsules,
-            kernel_size = kernel_size,
-            stride = stride,
+            kernel_size = 1,
+            stride = 1,
             padding = padding,
-            activation = tf.nn.relu,
+            activation = tf.nn.sigmoid,
             name = 'activations_conv'
         )
         activations = tf.identity(activations, name = 'activations')
@@ -52,7 +50,6 @@ def conv_caps_primary(input, **params):
 
 
 def conv_caps(input, **params):
-# (inputs, shape, strides, iterations, batch_size, name):
   shape = [3, 3, 32, 32]
   stride = params.get('stride', 2)
   # strides = params.get('strides', [1, 2, 2, 1])
@@ -352,10 +349,11 @@ def class_capsules(input, **params):
     """
     num_classes = params['n_classes']
     iterations = 3
-    batch_size = 10
 
     inputs_poses, inputs_activations = input # (24, 4, 4, 32, 4, 4), (24, 4, 4, 32)
+    print(inputs_poses.shape)
 
+    batch_size = tf.shape(inputs_poses)[0]
     inputs_shape = inputs_poses.get_shape()
     spatial_size = int(inputs_shape[1])  # 4
     pose_size = int(inputs_shape[-1])    # 4

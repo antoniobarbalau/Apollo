@@ -120,9 +120,12 @@ class Coordinator(object):
         return_values.append(self.train_iteration())
         iteration_end_time = time.time()
         iteration_duration = iteration_end_time - iteration_start_time
+        iteration_d_estimation = 0
 
         for iteration_n in range(1, self.n_iterations):
-            remaining_time = (self.n_iterations - iteration_n) * iteration_duration
+            remaining_time = (
+                (self.n_iterations - iteration_n) * iteration_d_estimation
+            )
             print(
                 f'{np.round(iteration_n / self.n_iterations, 2)} -- ' +
                 f'{format_seconds(remaining_time)}',
@@ -132,6 +135,11 @@ class Coordinator(object):
             return_values.append(self.train_iteration())
             iteration_end_time = time.time()
             iteration_duration = iteration_end_time - iteration_start_time
+            iteration_d_estimation += (iteration_n == 0) * iteration_duration
+            iteration_d_estimation = (
+                .95 * iteration_d_estimation +
+                .05 * iteration_duration
+            )
 
         # if self.validation:
         #     if self.epoch_n % self.validation['every'] == 0:
