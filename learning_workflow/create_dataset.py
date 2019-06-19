@@ -8,15 +8,16 @@ import glob
 
 for usage in ['train', 'val', 'test']:
     writer = genetor.data.Writer(
-        dir = f'../data/tf_records/mnist/{usage}/',
+        dir = f'../data/tf_records/fer/{usage}/',
         format = {
             'input': 'bytes',
             'target': 'int'
         },
     )
-    for filepath in glob.glob(f'../data/raw/mnist/{usage}/*'):
+    for filepath in glob.glob(f'../data/raw/fer/{usage}/*'):
         writer.write_sample({
             'input': writer.read_im(filepath),
             'target': int(os.path.basename(filepath).split('_')[0])
         })
+
 

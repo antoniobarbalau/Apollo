@@ -5,6 +5,7 @@ import tensorflow as tf
 
 class Writer(object):
 
+
     def __init__(self, dir, format):
         self.dir = dir
         if not os.path.exists(self.dir):
@@ -70,4 +71,5 @@ class Writer(object):
         sample_serialized = sample_proto.SerializeToString()
 
         self.writer.write(sample_serialized)
+
 

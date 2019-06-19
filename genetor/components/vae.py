@@ -23,3 +23,4 @@ def vae_encoding(input, **params):
 
     return encoding
 
+

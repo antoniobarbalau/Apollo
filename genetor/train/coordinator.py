@@ -7,20 +7,22 @@ import time
 
 class Coordinator(object):
 
-    def __init__(self,
-                 ckpt_meta_path,
-                 record_paths = None,
-                 summary = None,
-                 batch_size = None,
-                 n_samples = None,
-                 placeholders = dict(),
-                 optimizers = ['optimizer'],
-                 record_paths_placeholder = 'record_paths:0',
-                 batch_size_tensor = 'batch_size:0',
-                 iterator_initializer = 'iterator_initializer',
-                 next_batch = 'next_batch',
-                 validation = None,
-                 return_values = []):
+
+    def __init__(
+            self,
+            ckpt_meta_path,
+            record_paths = None,
+            summary = None,
+            batch_size = None,
+            n_samples = None,
+            placeholders = dict(),
+            optimizers = ['optimizer'],
+            record_paths_placeholder = 'record_paths:0',
+            batch_size_tensor = 'batch_size:0',
+            iterator_initializer = 'iterator_initializer',
+            next_batch = 'next_batch',
+            return_values = []
+    ):
 
         self.ckpt_meta_path = ckpt_meta_path
         self.record_paths = record_paths
@@ -32,7 +34,6 @@ class Coordinator(object):
         self.optimizers = optimizers
         self.iterator_initializer = iterator_initializer
         self.next_batch = next_batch
-        self.validation = validation
         self.return_values = return_values
 
         self.load_session()
@@ -43,7 +44,6 @@ class Coordinator(object):
         if self.summary:
             self.create_summary()
 
-        # self.session.run(tf.global_variables_initializer())
         if self.record_paths:
             self.initialize_iterators()
         else:
@@ -55,7 +55,6 @@ class Coordinator(object):
 
 
     def train_iteration(self):
-        # print('ok')
         self.iteration_n += 1
         if self.iteration_n == self.n_iterations:
             self.epoch_n += 1
@@ -67,22 +66,11 @@ class Coordinator(object):
             self.tensors[tensor_name]
             for tensor_name in self.return_values
         ]
-
         feed_dict = {
             name: generator(self.iteration_n, self.batch_size)
             for name, generator in self.placeholders.items()
         }
-        # print(feed_dict)
-        # print(
-        #     return_values +
-        #     load_data +
-        #     [
-        #         self.operations[optimizer_name]
-        #         for optimizer_name in self.optimizers
-        #     ] +
-        #     summary
-        # )
-        # print(feed_dict)
+
         results = self.session.run(
             return_values +
             load_data +
@@ -93,6 +81,7 @@ class Coordinator(object):
             summary,
             feed_dict = feed_dict
         )
+
         if self.summary_is_non_empty:
             self.summary_writer.add_summary(
                 results[-1],
@@ -101,8 +90,8 @@ class Coordinator(object):
 
         return results[:len(return_values)]
 
-    def train_epoch(self):
 
+    def train_epoch(self):
         def format_seconds(s):
             s = int(s)
             h = s // 3600
@@ -116,10 +105,7 @@ class Coordinator(object):
 
         return_values = []
 
-        iteration_start_time = time.time()
         return_values.append(self.train_iteration())
-        iteration_end_time = time.time()
-        iteration_duration = iteration_end_time - iteration_start_time
         iteration_d_estimation = 0
 
         for iteration_n in range(1, self.n_iterations):
@@ -135,48 +121,14 @@ class Coordinator(object):
             return_values.append(self.train_iteration())
             iteration_end_time = time.time()
             iteration_duration = iteration_end_time - iteration_start_time
-            iteration_d_estimation += (iteration_n == 0) * iteration_duration
+            iteration_d_estimation += (iteration_n == 1) * iteration_duration
             iteration_d_estimation = (
                 .95 * iteration_d_estimation +
                 .05 * iteration_duration
             )
 
-        # if self.validation:
-        #     if self.epoch_n % self.validation['every'] == 0:
-        #         self.run_validation()
-
         return np.array(return_values)
 
-
-    def run_validation(self):
-        # if self.record_paths:
-        #     self.initialize_iterators()
-        n_iterations = math.ceil(self.n_samples / self.batch_size)
-        load_data = [self.operations[self.next_batch]] if self.record_paths else []
-        s = 0
-        for iteration_n in range(n_iterations):
-            feed_dict = {
-                name: generator(iteration_n, self.batch_size)
-                for name, generator in self.placeholders.items()
-            }
-            results = self.session.run(
-                load_data +
-                [
-                    self.tensors[self.validation['accuracy_sum']]
-                ],
-                feed_dict = feed_dict
-            )
-            print(results[-1])
-            s += results[-1]
-        print(s)
-        summary = tf.Summary(value = [
-            tf.Summary.Value(
-                tag = 'validation_accuracy',
-                simple_value = s / self.n_samples
-            )
-        ])
-        self.summary_writer.add_summary(summary, self.epoch_n)
-        # print(self.epoch_n)
 
     def convert_placeholders_generators(self):
         for elem in self.placeholders:
@@ -186,15 +138,6 @@ class Coordinator(object):
 
     def save(self):
         self.saver.save(self.session, self.ckpt_meta_path.replace('.meta', ''))
-
-
-    def run_iteration_without_optimizer(self):
-        optimizers = self.optimizers
-        self.optimizers = []
-        output = self.train_iteration()
-        self.optimizers = optimizers
-
-        return output
 
 
     def create_summary(self):
@@ -216,6 +159,7 @@ class Coordinator(object):
 
         if self.summary_is_non_empty:
             self.summary_merged = tf.summary.merge_all()
+
         self.summary_writer = tf.summary.FileWriter(
             self.summary['path'],
             self.graph
@@ -248,11 +192,6 @@ class Coordinator(object):
                 image['tensor']
                 for image in self.summary.get('images', [])
             ]
-        if self.validation:
-            tensor_names += [
-                self.validation['accuracy_sum']
-            ]
-
         for tensor_name in tensor_names:
             self.tensors[tensor_name] = self.graph.get_tensor_by_name(
                 tensor_name
@@ -287,5 +226,5 @@ class Coordinator(object):
                 self.tensors[self.batch_size_tensor]: self.batch_size
             }
         )
-        
-    
+ 
+
