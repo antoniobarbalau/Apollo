@@ -50,13 +50,15 @@ def conv_caps_primary(input, **params):
 
 
 def conv_caps(input, **params):
-  shape = [3, 3, 32, 32]
   stride = params.get('stride', 2)
   # strides = params.get('strides', [1, 2, 2, 1])
   strides = [1, stride, stride, 1]
   iterations = 2
   batch_size = 10
   inputs_poses, inputs_activations = input
+  shape = [
+      3, 3, inputs_poses.shape[3].value, params.get('n_capsules', 32)
+  ]
   # batch_size = tf.shape(inputs_poses)[0]
 
   with tf.variable_scope(params['name']) as scope:
@@ -403,7 +405,10 @@ def class_capsules(input, **params):
             )
 
         # poses (24, 10, 16) -> (24, 10, 4, 4)
-        poses = tf.reshape(poses, shape=[batch_size, num_classes, pose_size, pose_size] )
+        poses = tf.reshape(
+            poses, shape = [batch_size, num_classes, pose_size, pose_size],
+            name = 'poses'
+        )
 
         # poses (24, 10, 4, 4), activation (24, 10)
         return poses, activations

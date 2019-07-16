@@ -14,20 +14,19 @@ def gelu(input, **params):
 
 
 def prelu(input, **params):
-    with tf.variable_scope(params['name']):
-        alpha = tf.Variable(
-            initial_value = tf.zeros(shape = input.shape[1:]),
-            name = 'alpha',
-            dtype = tf.float32
-        )
+    alpha = tf.Variable(
+        initial_value = tf.zeros(shape = input.shape[1:]),
+        name = 'alpha',
+        dtype = tf.float32
+    )
 
-        positive = tf.nn.relu(input)
-        negative = alpha * (input - tf.abs(input)) * .5
+    positive = tf.nn.relu(input)
+    negative = alpha * (input - tf.abs(input)) * .5
 
-        output = tf.add(
-            positive, negative,
-            name = 'output'
-        )
+    output = tf.add(
+        positive, negative,
+        name = params['name']
+    )
 
     return output
 
