@@ -75,19 +75,20 @@ def conv_caps(input, **params):
       # Tile the activations needed for the EM routing
       inputs_activations = kernel_tile(inputs_activations, 3, stride)  # (?, 14, 14, 32) -> (?, 6, 6, 9, 32)
       spatial_size = int(inputs_activations.get_shape()[1]) # 6
+      spatial_size_2 = int(inputs_activations.get_shape()[2]) # 6
 
       # Reshape it for later operations
       inputs_poses = tf.reshape(inputs_poses, shape=[-1, 3 * 3 * i_size, 16])  # (?, 9x32=288, 16)
-      inputs_activations = tf.reshape(inputs_activations, shape=[-1, spatial_size, spatial_size, 3 * 3 * i_size]) # (?, 6, 6, 9x32=288)
+      inputs_activations = tf.reshape(inputs_activations, shape=[-1, spatial_size, spatial_size_2, 3 * 3 * i_size]) # (?, 6, 6, 9x32=288)
 
       with tf.variable_scope('votes') as scope:
           
           # Generate the votes by multiply it with the transformation matrices
-          votes = mat_transform(inputs_poses, o_size, batch_size*spatial_size*spatial_size)  # (864, 288, 32, 16)
+          votes = mat_transform(inputs_poses, o_size, batch_size*spatial_size*spatial_size_2)  # (864, 288, 32, 16)
           
           # Reshape the vote for EM routing
           votes_shape = votes.get_shape()
-          votes = tf.reshape(votes, shape=[batch_size, spatial_size, spatial_size, votes_shape[-3], votes_shape[-2], votes_shape[-1]]) # (24, 6, 6, 288, 32, 16)
+          votes = tf.reshape(votes, shape=[batch_size, spatial_size, spatial_size_2, votes_shape[-3], votes_shape[-2], votes_shape[-1]]) # (24, 6, 6, 288, 32, 16)
           # tf.logging.info(f"{name} votes shape: {votes.get_shape()}")
 
       with tf.variable_scope('routing') as scope:
@@ -117,6 +118,7 @@ def conv_caps(input, **params):
                   poses_shape[0], poses_shape[1], poses_shape[2], poses_shape[3], pose_size, pose_size
               ]
           )
+          print(poses.shape)
 
       # tf.logging.info(f"{name} pose shape: {poses.get_shape()}")
       # tf.logging.info(f"{name} activations shape: {activations.get_shape()}")
@@ -358,24 +360,25 @@ def class_capsules(input, **params):
     batch_size = tf.shape(inputs_poses)[0]
     inputs_shape = inputs_poses.get_shape()
     spatial_size = int(inputs_shape[1])  # 4
+    spatial_size_2 = int(inputs_shape[2])  # 4
     pose_size = int(inputs_shape[-1])    # 4
     i_size = int(inputs_shape[3])        # 32
 
     # inputs_poses (24*4*4=384, 32, 16)
-    inputs_poses = tf.reshape(inputs_poses, shape=[batch_size*spatial_size*spatial_size, inputs_shape[-3], inputs_shape[-2]*inputs_shape[-2] ])
+    inputs_poses = tf.reshape(inputs_poses, shape=[batch_size*spatial_size*spatial_size_2, inputs_shape[-3], inputs_shape[-2]*inputs_shape[-2] ])
 
     with tf.variable_scope(params['name']) as scope:
         with tf.variable_scope('votes') as scope:
             # inputs_poses (384, 32, 16)
             # votes: (384, 32, 10, 16)
-            votes = mat_transform(inputs_poses, num_classes, batch_size*spatial_size*spatial_size)
+            votes = mat_transform(inputs_poses, num_classes, batch_size*spatial_size*spatial_size_2)
             # tf.logging.info(f"{name} votes shape: {votes.get_shape()}")
 
             # votes (24, 4, 4, 32, 10, 16)
-            votes = tf.reshape(votes, shape=[batch_size, spatial_size, spatial_size, i_size, num_classes, pose_size*pose_size])
+            votes = tf.reshape(votes, shape=[batch_size, spatial_size, spatial_size_2, i_size, num_classes, pose_size*pose_size])
 
             # (24, 4, 4, 32, 10, 16)
-            votes = coord_addition(votes, spatial_size, spatial_size)
+            votes = coord_addition(votes, spatial_size, spatial_size_2)
 
             # tf.logging.info(f"{name} votes shape with coord addition: {votes.get_shape()}")
 
