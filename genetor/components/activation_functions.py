@@ -25,7 +25,7 @@ def prelu(input, **params):
 
     output = tf.add(
         positive, negative,
-        name = params['name']
+        name = params.get('name', 'prelu')
     )
 
     return output

@@ -48,10 +48,14 @@ def dropout(input, **params):
 
 
 def batch_norm(input, **params):
-    return tf.layers.batch_normalization(
+    activation = params.get('activation', None)
+    output = tf.layers.batch_normalization(
         input,
         training = to_tensor(params['is_training'])
     )
+    if activation is None:
+        return output
+    return activation(output)
 
 
 def fc(input, **params):

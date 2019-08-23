@@ -4,7 +4,7 @@ import tensorflow as tf
 
 def generate_architecture(structure):
     filters = structure.get('filters', [])
-    kernels = structure.get('kernels', [])
+    kernels = structure.get('kernels', 5)
     units = structure.get('units', [])
     strides = structure.get('strides', [])
     biasless = structure.get('biasless', False)
