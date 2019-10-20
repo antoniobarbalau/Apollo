@@ -412,6 +412,7 @@ def class_capsules(input, **params):
             poses, shape = [batch_size, num_classes, pose_size, pose_size],
             name = 'poses'
         )
+        activations = tf.identity(activations, name = 'activations')
 
         # poses (24, 10, 4, 4), activation (24, 10)
         return poses, activations
