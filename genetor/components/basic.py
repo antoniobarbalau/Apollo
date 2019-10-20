@@ -1,5 +1,12 @@
 import tensorflow as tf
 
+MOMENTUM = .9
+
+
+def substract(input, **params):
+    other = params.get('other', 0)
+    return input - other
+
 
 def input(input, **params):
     return input
@@ -82,7 +89,8 @@ def fc(input, **params):
         if batch_norm_is_training is not None:
             output_raw = tf.contrib.layers.batch_norm(
                 output_raw,
-                is_training = batch_norm_is_training
+                is_training = batch_norm_is_training,
+                decay = MOMENTUM
             )
 
         activation = params.get('activation', None)
